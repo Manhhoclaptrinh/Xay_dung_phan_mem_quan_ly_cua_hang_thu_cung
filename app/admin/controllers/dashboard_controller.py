@@ -17,14 +17,14 @@ admin_bp = Blueprint('admin', __name__)
 MONTHLY_REVENUE = [18.5, 21, 19.8, 25.6, 28, 31, 29.5, 34, 38, 41.5, 45, 48]
 
 
-# MAIN ADMIN PAGE
+# ── MAIN ADMIN PAGE ──────────────────────────────────────────────────────────
 @admin_bp.route('/')
 @admin_bp.route('/dashboard')
 def dashboard():
     return render_template('admin/index.html')
 
 
-# DASHBOARD DATA
+# ── DASHBOARD DATA ───────────────────────────────────────────────────────────
 @admin_bp.route('/api/dashboard')
 def api_dashboard():
     today_apts = Appointment.query.filter_by(date='2024-11-25').all()
@@ -46,7 +46,7 @@ def api_dashboard():
     })
 
 
-# PETS
+# ── PETS ─────────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/pets')
 def api_pets():
     pets = Pet.query.all()
@@ -64,32 +64,24 @@ def api_pets():
 def api_add_pet():
     data = request.get_json(force=True)
     import uuid
-    pet_id = 'PET' + str(uuid.uuid4())[:5].upper()
     pet = Pet(
-        id=pet_id,
-        name=data.get('name'),
-        species=data.get('species'),
-        breed=data.get('breed'),
-        age=data.get('age'),
-        gender=data.get('gender'),
-        owner_id=data.get('owner_id'),
-        chip=data.get('chip'),
-
-        vaccines=','.join(
-            data.get('vaccines', [])
-        ),
-
-        allergies=data.get('allergies'),
-        status=data.get('status'),
-        is_for_adoption=data.get('is_for_adoption'),
-        adoption_status='available'
+        id       = 'PET' + str(uuid.uuid4())[:5].upper(),
+        name     = data.get('name', ''),
+        species  = data.get('species', ''),
+        breed    = data.get('breed', ''),
+        age      = int(data.get('age', 0)),
+        gender   = data.get('gender', ''),
+        owner_id = data.get('owner_id'),
+        vaccines = data.get('vaccines', ''),
+        allergies= data.get('allergies', 'Không'),
+        status   = 'Khỏe mạnh',
     )
     db.session.add(pet)
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã thêm hồ sơ thú cưng!'})
 
 
-# CUSTOMERS
+# ── CUSTOMERS ────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/customers')
 def api_customers():
     customers = Customer.query.all()
@@ -117,7 +109,7 @@ def api_add_customer():
     return jsonify({'ok': True, 'message': 'Đã thêm khách hàng!'})
 
 
-# INVENTORY
+# ── INVENTORY ────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/inventory')
 def api_inventory():
     items = Inventory.query.all()
@@ -135,7 +127,7 @@ def api_update_inventory(item_id):
     return jsonify({'ok': True, 'message': 'Đã cập nhật kho hàng!'})
 
 
-# APPOINTMENTS
+# ── APPOINTMENTS ─────────────────────────────────────────────────────────────
 @admin_bp.route('/api/appointments')
 def api_appointments():
     apts = Appointment.query.all()
@@ -179,28 +171,28 @@ def api_add_appointment():
     return jsonify({'ok': True, 'message': 'Đã đặt lịch thành công!'})
 
 
-# ROOMS / BOARDING
+# ── ROOMS / BOARDING ─────────────────────────────────────────────────────────
 @admin_bp.route('/api/rooms')
 def api_rooms():
     rooms = Room.query.all()
     return jsonify([r.to_dict() for r in rooms])
 
 
-# STAFF
+# ── STAFF ────────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/staff')
 def api_staff():
     staff = Staff.query.all()
     return jsonify([s.to_dict() for s in staff])
 
 
-# VENDORS
+# ── VENDORS ──────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/vendors')
 def api_vendors():
     vendors = Vendor.query.all()
     return jsonify([v.to_dict() for v in vendors])
 
 
-# PROMOTIONS
+# ── PROMOTIONS ───────────────────────────────────────────────────────────────
 @admin_bp.route('/api/promotions')
 def api_promotions():
     promos = Promotion.query.all()
@@ -235,7 +227,7 @@ def api_delete_promotion(promo_id):
     return jsonify({'ok': True, 'message': 'Đã xóa khuyến mãi!'})
 
 
-# ORDERS
+# ── ORDERS ───────────────────────────────────────────────────────────────────
 @admin_bp.route('/api/orders')
 def api_orders():
     orders = Order.query.order_by(Order.date.desc()).all()
@@ -250,7 +242,7 @@ def api_confirm_order(order_id):
     return jsonify({'ok': True, 'message': f'Đã xác nhận đơn {order_id}!'})
 
 
-# BOOKINGS (admin view)
+# ── BOOKINGS (admin view) ────────────────────────────────────────────────────
 @admin_bp.route('/api/bookings')
 def api_bookings():
     bookings = Booking.query.order_by(Booking.created_at.desc()).all()

@@ -1,15 +1,15 @@
-// INIT 
+// ── INIT ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('bkDate').valueAsDate = new Date();
   loadProducts();
 });
 
-// NAVIGATION 
-function scrollTo(id) {
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function scrollToSection(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// PRODUCTS 
+// ── PRODUCTS ───────────────────────────────────────────────────────────────
 async function loadProducts(params = {}) {
   const qs = new URLSearchParams(params).toString();
   const res = await fetch('/api/products' + (qs ? '?' + qs : ''));
@@ -63,7 +63,7 @@ function liveSearch(q) {
   }, 300);
 }
 
-// CART 
+// ── CART ───────────────────────────────────────────────────────────────────
 let cart = [];
 
 function addCart(p) {
@@ -127,7 +127,7 @@ function checkout() {
   toast(`Đặt hàng thành công! Tổng: ${fmt(total)} 🎉`, 'success');
 }
 
-// BOOKING 
+// ── BOOKING ────────────────────────────────────────────────────────────────
 let selectedSlot = '';
 
 function selectSlot(el) {
@@ -139,25 +139,138 @@ function selectSlot(el) {
 async function submitBooking() {
   const name  = document.getElementById('bkName').value.trim();
   const phone = document.getElementById('bkPhone').value.trim();
-  if (!name || !phone) { toast('Vui lòng nhập tên và số điện thoại!', 'error'); return; }
+  const petName = document.getElementById('bkPetName').value.trim();
+  const breed = document.getElementById('bkBreed').value.trim();
+  const service = document.getElementById('bkService').value;
+  const date = document.getElementById('bkDate').value;
+  const notes = document.getElementById('bkNotes').value.trim();
+
+  if (!name || !phone) {
+    toast('Vui lòng nhập tên và số điện thoại!', 'error');
+    return;
+  }
+
+  if (!service || !date || !selectedSlot) {
+    toast('Vui lòng chọn dịch vụ, ngày và giờ hẹn!', 'error');
+    return;
+  }
+
+  // Validate phone format
+  if (!/^0\d{9,10}$/.test(phone)) {
+    toast('Số điện thoại không hợp lệ!', 'error');
+    return;
+  }
 
   const payload = {
     full_name: name,
     phone,
-    pet_name:  document.getElementById('bkPetName').value.trim(),
-    breed:     document.getElementById('bkBreed').value.trim(),
-    service:   document.getElementById('bkService').value,
-    date:      document.getElementById('bkDate').value,
+    pet_name: petName,
+    breed,
+    service,
+    date,
     time_slot: selectedSlot,
-    notes:     document.getElementById('bkNotes').value.trim(),
+    notes,
   };
 
-  const res  = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  const data = await res.json();
-  toast(data.message, data.ok ? 'success' : 'error');
+  try {
+    const res = await fetch('/api/booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    
+    if (data.ok) {
+      toast(data.message, 'success');
+      // Reset form
+      document.getElementById('bkName').value = '';
+      document.getElementById('bkPhone').value = '';
+      document.getElementById('bkPetName').value = '';
+      document.getElementById('bkBreed').value = '';
+      document.getElementById('bkService').value = 'Spa & Tắm';
+      document.getElementById('bkDate').valueAsDate = new Date();
+      document.getElementById('bkNotes').value = '';
+      document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+      selectedSlot = '';
+    } else {
+      toast(data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Booking error:', error);
+    toast('Có lỗi kết nối. Vui lòng thử lại!', 'error');
+  }
 }
 
-// BOOKING MODAL
+// ── VALIDATE PHONE ────────────────────────────────────────────────────────
+function validatePhone(phone) {
+  return /^0\d{9,10}$/.test(phone);
+}
+
+function validateDate(dateStr) {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date >= today;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  
+  // CSS cho toast
+  const style = document.createElement('style');
+  if (!document.getElementById('toast-styles')) {
+    style.id = 'toast-styles';
+    style.textContent = `
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+      }
+      .toast-success {
+        background: #10b981;
+        color: white;
+      }
+      .toast-error {
+        background: #ef4444;
+        color: white;
+      }
+      .toast-info {
+        background: #3b82f6;
+        color: white;
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── BOOKING MODAL ──────────────────────────────────────────────────────────
 let modalService = '';
 
 function openBooking(service) {
@@ -190,6 +303,7 @@ async function submitModal() {
   toast(data.message, data.ok ? 'success' : 'error');
 }
 
+// Close modal on overlay click
 document.getElementById('bookingModal').addEventListener('click', e => {
   if (e.target === document.getElementById('bookingModal')) closeModal();
 });

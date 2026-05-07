@@ -28,13 +28,12 @@ def create_app():
         return Customer.query.get(user_id)
 
     from app.user.controllers.main_controller import user_bp
+    from app.user.routes import booking_bp
     from app.admin.controllers.dashboard_controller import admin_bp
-    from app.admin.controllers.pet_controller import pet_bp
 
     app.register_blueprint(user_bp)
+    app.register_blueprint(booking_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
-
-    app.register_blueprint(pet_bp)
 
     with app.app_context():
         db.create_all()
@@ -57,7 +56,7 @@ def _seed_data():
     from app.admin.models.order_model import Order
 
     if Product.query.first():
-        return  
+        return  # Already seeded
 
     products = [
         Product(id='P01', name='Hạt Royal Canin Adult', brand='Royal Canin',
@@ -235,3 +234,4 @@ def _seed_data():
         for obj in obj_list:
             db.session.add(obj)
     db.session.commit()
+    

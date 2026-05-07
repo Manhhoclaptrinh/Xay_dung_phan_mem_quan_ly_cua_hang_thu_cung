@@ -13,7 +13,7 @@ class Customer(UserMixin, db.Model):
     total_spent = db.Column(db.BigInteger, default=0)
     join_date   = db.Column(db.String(20))
 
-    def get_id(self):  
+    def get_id(self):   # 👈 bắt buộc với Flask-Login
         return str(self.id)
 
     def to_dict(self):

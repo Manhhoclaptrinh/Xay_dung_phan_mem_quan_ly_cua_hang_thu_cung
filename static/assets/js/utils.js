@@ -1,4 +1,4 @@
-// TOAST
+// ── TOAST ──────────────────────────────────────────────────────────────────
 function toast(msg, type = 'info') {
   const w = document.getElementById('toastWrap');
   const t = document.createElement('div');
@@ -12,7 +12,7 @@ function toast(msg, type = 'info') {
   }, 3200);
 }
 
-// FORMAT
+// ── FORMAT ─────────────────────────────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 }
