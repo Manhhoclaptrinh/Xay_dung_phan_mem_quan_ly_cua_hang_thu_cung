@@ -17,7 +17,7 @@ class Pet(db.Model):
 
     # Adoption listing fields
     is_for_adoption = db.Column(db.Boolean, default=False)
-    adoption_status = db.Column(db.String(20), default='available')  # available | reserved
+    adoption_status = db.Column(db.String(20), default='available')
 
     # Relationship
     owner = db.relationship('Customer', backref='pets', foreign_keys=[owner_id])
