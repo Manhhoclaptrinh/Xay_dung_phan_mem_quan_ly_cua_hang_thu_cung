@@ -45,7 +45,6 @@ def api_dashboard():
         'rooms_cleaning':     sum(1 for r in rooms_data if r['status'] == 'cleaning'),
     })
 
-#Thêm
 # PETS 
 
 # GET ALL + SEARCH
