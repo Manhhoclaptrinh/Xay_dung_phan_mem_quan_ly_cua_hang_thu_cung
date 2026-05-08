@@ -17,14 +17,14 @@ admin_bp = Blueprint('admin', __name__)
 MONTHLY_REVENUE = [18.5, 21, 19.8, 25.6, 28, 31, 29.5, 34, 38, 41.5, 45, 48]
 
 
-# ── MAIN ADMIN PAGE ──────────────────────────────────────────────────────────
+# MAIN ADMIN PAGE
 @admin_bp.route('/')
 @admin_bp.route('/dashboard')
 def dashboard():
     return render_template('admin/index.html')
 
 
-# ── DASHBOARD DATA ───────────────────────────────────────────────────────────
+# DASHBOARD DATA
 @admin_bp.route('/api/dashboard')
 def api_dashboard():
     today_apts = Appointment.query.filter_by(date='2024-11-25').all()
@@ -45,43 +45,153 @@ def api_dashboard():
         'rooms_cleaning':     sum(1 for r in rooms_data if r['status'] == 'cleaning'),
     })
 
+#Thêm
+# PETS 
 
-# ── PETS ─────────────────────────────────────────────────────────────────────
+# GET ALL + SEARCH
 @admin_bp.route('/api/pets')
 def api_pets():
-    pets = Pet.query.all()
+
+    search = request.args.get('search', '').strip()
+
+    query = Pet.query
+
+    # SEARCH
+    if search:
+        query = query.filter(
+            (Pet.name.ilike(f'%{search}%')) |
+            (Pet.species.ilike(f'%{search}%')) |
+            (Pet.breed.ilike(f'%{search}%')) |
+            (Pet.id.ilike(f'%{search}%'))
+        )
+
+    pets = query.all()
+
     result = []
+
     for p in pets:
+
         d = p.to_dict()
+
         if p.owner:
-            d['owner_name']  = p.owner.name
+            d['owner_name'] = p.owner.name
             d['owner_phone'] = p.owner.phone
+
         result.append(d)
+
     return jsonify(result)
 
 
+# GET DETAIL
+@admin_bp.route('/api/pets/<string:pet_id>')
+def api_pet_detail(pet_id):
+
+    pet = Pet.query.get_or_404(pet_id)
+
+    data = pet.to_dict()
+
+    if pet.owner:
+        data['owner_name'] = pet.owner.name
+        data['owner_phone'] = pet.owner.phone
+        data['owner_email'] = pet.owner.email
+
+    return jsonify(data)
+
+
+# CREATE
 @admin_bp.route('/api/pets', methods=['POST'])
 def api_add_pet():
+
     data = request.get_json(force=True)
+
     import uuid
+
     pet = Pet(
-        id       = 'PET' + str(uuid.uuid4())[:5].upper(),
-        name     = data.get('name', ''),
-        species  = data.get('species', ''),
-        breed    = data.get('breed', ''),
-        age      = int(data.get('age', 0)),
-        gender   = data.get('gender', ''),
-        owner_id = data.get('owner_id'),
-        vaccines = data.get('vaccines', ''),
-        allergies= data.get('allergies', 'Không'),
-        status   = 'Khỏe mạnh',
+        id='PET' + str(uuid.uuid4())[:5].upper(),
+        name=data.get('name', ''),
+        species=data.get('species', ''),
+        breed=data.get('breed', ''),
+        age=int(data.get('age', 0)),
+        gender=data.get('gender', ''),
+        owner_id=data.get('owner_id'),
+        chip=data.get('chip', ''),
+        vaccines=','.join(data.get('vaccines', [])),
+        allergies=data.get('allergies', 'Không'),
+        status=data.get('status', 'Khỏe mạnh'),
+        is_for_adoption=data.get('is_for_adoption', False),
+        adoption_status='Chờ nhận nuôi'
+        if data.get('is_for_adoption')
+        else 'Không'
     )
+
     db.session.add(pet)
     db.session.commit()
-    return jsonify({'ok': True, 'message': 'Đã thêm hồ sơ thú cưng!'})
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã thêm hồ sơ thú cưng!'
+    })
 
 
-# ── CUSTOMERS ────────────────────────────────────────────────────────────────
+# UPDATE
+@admin_bp.route('/api/pets/<string:pet_id>', methods=['PUT'])
+def api_update_pet(pet_id):
+
+    pet = Pet.query.get_or_404(pet_id)
+
+    data = request.get_json(force=True)
+
+    pet.name = data.get('name', pet.name)
+    pet.species = data.get('species', pet.species)
+    pet.breed = data.get('breed', pet.breed)
+
+    if 'age' in data:
+        pet.age = int(data.get('age', pet.age))
+
+    pet.gender = data.get('gender', pet.gender)
+    pet.owner_id = data.get('owner_id', pet.owner_id)
+    pet.chip = data.get('chip', pet.chip)
+
+    if 'vaccines' in data:
+        pet.vaccines = ','.join(data.get('vaccines', []))
+
+    pet.allergies = data.get('allergies', pet.allergies)
+    pet.status = data.get('status', pet.status)
+
+    pet.is_for_adoption = data.get(
+        'is_for_adoption',
+        pet.is_for_adoption
+    )
+
+    if pet.is_for_adoption:
+        pet.adoption_status = 'Chờ nhận nuôi'
+    else:
+        pet.adoption_status = 'Không'
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã cập nhật thú cưng!'
+    })
+
+
+# DELETE
+@admin_bp.route('/api/pets/<string:pet_id>', methods=['DELETE'])
+def api_delete_pet(pet_id):
+
+    pet = Pet.query.get_or_404(pet_id)
+
+    db.session.delete(pet)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã xóa thú cưng!'
+    })
+
+# CUSTOMERS 
 @admin_bp.route('/api/customers')
 def api_customers():
     customers = Customer.query.all()
@@ -109,7 +219,7 @@ def api_add_customer():
     return jsonify({'ok': True, 'message': 'Đã thêm khách hàng!'})
 
 
-# ── INVENTORY ────────────────────────────────────────────────────────────────
+# INVENTORY
 @admin_bp.route('/api/inventory')
 def api_inventory():
     items = Inventory.query.all()
@@ -127,7 +237,7 @@ def api_update_inventory(item_id):
     return jsonify({'ok': True, 'message': 'Đã cập nhật kho hàng!'})
 
 
-# ── APPOINTMENTS ─────────────────────────────────────────────────────────────
+# APPOINTMENTS
 @admin_bp.route('/api/appointments')
 def api_appointments():
     apts = Appointment.query.all()
@@ -171,28 +281,28 @@ def api_add_appointment():
     return jsonify({'ok': True, 'message': 'Đã đặt lịch thành công!'})
 
 
-# ── ROOMS / BOARDING ─────────────────────────────────────────────────────────
+# ROOMS / BOARDING
 @admin_bp.route('/api/rooms')
 def api_rooms():
     rooms = Room.query.all()
     return jsonify([r.to_dict() for r in rooms])
 
 
-# ── STAFF ────────────────────────────────────────────────────────────────────
+# STAFF
 @admin_bp.route('/api/staff')
 def api_staff():
     staff = Staff.query.all()
     return jsonify([s.to_dict() for s in staff])
 
 
-# ── VENDORS ──────────────────────────────────────────────────────────────────
+# VENDORS
 @admin_bp.route('/api/vendors')
 def api_vendors():
     vendors = Vendor.query.all()
     return jsonify([v.to_dict() for v in vendors])
 
 
-# ── PROMOTIONS ───────────────────────────────────────────────────────────────
+# PROMOTIONS
 @admin_bp.route('/api/promotions')
 def api_promotions():
     promos = Promotion.query.all()
@@ -227,7 +337,7 @@ def api_delete_promotion(promo_id):
     return jsonify({'ok': True, 'message': 'Đã xóa khuyến mãi!'})
 
 
-# ── ORDERS ───────────────────────────────────────────────────────────────────
+# ORDERS
 @admin_bp.route('/api/orders')
 def api_orders():
     orders = Order.query.order_by(Order.date.desc()).all()
@@ -242,7 +352,7 @@ def api_confirm_order(order_id):
     return jsonify({'ok': True, 'message': f'Đã xác nhận đơn {order_id}!'})
 
 
-# ── BOOKINGS (admin view) ────────────────────────────────────────────────────
+# BOOKINGS (admin view)
 @admin_bp.route('/api/bookings')
 def api_bookings():
     bookings = Booking.query.order_by(Booking.created_at.desc()).all()
