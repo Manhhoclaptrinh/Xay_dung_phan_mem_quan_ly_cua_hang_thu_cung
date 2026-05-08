@@ -28,11 +28,9 @@ def create_app():
         return Customer.query.get(user_id)
 
     from app.user.controllers.main_controller import user_bp
-    from app.user.routes import booking_bp
     from app.admin.controllers.dashboard_controller import admin_bp
 
     app.register_blueprint(user_bp)
-    app.register_blueprint(booking_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
     with app.app_context():
