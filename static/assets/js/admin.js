@@ -1,4 +1,5 @@
-// ── NAVIGATION ─────────────────────────────────────────────────────────────
+// NAVIGATION
+
 let admPage = 'dashboard';
 const admLabels = {
   dashboard: 'Dashboard', pets: 'Hồ sơ Thú cưng', customers: 'Khách hàng',
@@ -42,7 +43,7 @@ async function admRender() {
   await (pages[admPage] || admDashboard)();
 }
 
-// ── API HELPERS ────────────────────────────────────────────────────────────
+// API HELPERS
 async function api(path, opts = {}) {
   const res = await fetch('/admin' + path, {
     headers: { 'Content-Type': 'application/json' },
@@ -51,7 +52,7 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
-// ── DASHBOARD ──────────────────────────────────────────────────────────────
+// DASHBOARD
 async function admDashboard() {
   const d = await api('/api/dashboard');
   const rev = d.monthly_revenue;
@@ -107,36 +108,318 @@ async function admDashboard() {
   </div>`;
 }
 
-// ── PETS ──────────────────────────────────────────────────────────────────
-async function admPets() {
-  const pets = await api('/api/pets');
+// PETS 
+async function admPets(search = '') {
+
+  const pets = await api(`/api/pets?search=${search}`);
+
   document.getElementById('admContent').innerHTML = `
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Hồ sơ Thú cưng</div><div class="adm-page-sub">${pets.length} thú cưng đang quản lý</div></div>
-    <button class="adm-btn adm-btn-primary" onclick="admShowModal('addPet')">+ Thêm hồ sơ</button>
-  </div>
-  <div class="adm-card" style="padding:0">
-    <div class="adm-table-wrap">
-      <table class="adm-table">
-        <thead><tr><th>ID / Chip</th><th>Thú cưng</th><th>Loài / Giống</th><th>Tuổi / Giới</th><th>Chủ nuôi</th><th>Vaccine</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-        <tbody>
-          ${pets.map(p => `<tr>
-            <td><div class="font-bold text-sm">${p.id}</div><div class="text-muted" style="font-size:.68rem">${p.chip || 'Chưa chip'}</div></td>
-            <td><div class="fxc gap8"><div style="width:34px;height:34px;border-radius:50%;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:1.1rem">${p.species === 'Chó' ? '🐶' : p.species === 'Mèo' ? '🐱' : '🐰'}</div><div><div class="font-bold">${p.name}</div>${p.allergies !== 'Không' ? `<div class="text-muted" style="font-size:.68rem">⚠️ ${p.allergies}</div>` : ''}</div></div></td>
-            <td><div>${p.species}</div><div class="text-muted text-sm">${p.breed}</div></td>
-            <td>${p.age} tuổi · ${p.gender}</td>
-            <td>${p.owner_name ? `<div class="font-bold text-sm">${p.owner_name}</div><div class="text-muted" style="font-size:.68rem">${p.owner_phone || ''}</div>` : 'N/A'}</td>
-            <td>${p.vaccines.length ? p.vaccines.map(v => `<span class="adm-tag adm-tag-blue" style="margin:2px">${v}</span>`).join('') : '<span class="adm-tag adm-tag-pink">Chưa tiêm</span>'}</td>
-            <td><span class="adm-tag adm-tag-${p.status === 'Khỏe mạnh' ? 'green' : 'orange'}">${p.status}</span></td>
-            <td><div class="flex gap6"><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Xem chi tiết ${p.name}','info')">👁</button><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Chỉnh sửa ${p.name}','info')">✏️</button></div></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
+
+    <div>
+      <div class="adm-page-title">Hồ sơ Thú cưng</div>
+      <div class="adm-page-sub">
+        ${pets.length} thú cưng đang quản lý
+      </div>
     </div>
-  </div>`;
+
+    <div class="flex gap8">
+
+      <input
+        class="adm-input"
+        id="petSearch"
+        placeholder="Tìm tên, giống, mã..."
+        style="width:220px"
+        value="${search}"
+      >
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="searchPets()"
+      >
+        🔍
+      </button>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="admShowModal('addPet')"
+      >
+        + Thêm hồ sơ
+      </button>
+
+    </div>
+  </div>
+
+  <div class="adm-card" style="padding:0">
+
+    <div class="adm-table-wrap">
+
+      <table class="adm-table">
+
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Thú cưng</th>
+            <th>Loài</th>
+            <th>Tuổi</th>
+            <th>Chủ nuôi</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${pets.map(p => `
+          <tr>
+
+            <td>
+              <div class="font-bold">${p.id}</div>
+            </td>
+
+            <td>
+              <div class="font-bold">${p.name}</div>
+              <div class="text-muted text-sm">${p.breed}</div>
+            </td>
+
+            <td>${p.species}</td>
+
+            <td>${p.age} tuổi</td>
+
+            <td>${p.owner_name || 'N/A'}</td>
+
+            <td>
+              <span class="adm-tag adm-tag-${p.status === 'Khỏe mạnh' ? 'green' : 'orange'}">
+                ${p.status}
+              </span>
+            </td>
+
+            <td>
+
+              <div class="flex gap6">
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="viewPet('${p.id}')"
+                >
+                  👁
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="editPet('${p.id}')"
+                >
+                  ✏️
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-danger adm-btn-sm"
+                  onclick="deletePet('${p.id}')"
+                >
+                  🗑
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+          `).join('')}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+  `;
 }
 
-// ── CUSTOMERS ─────────────────────────────────────────────────────────────
+function searchPets() {
+
+  const keyword = document.getElementById('petSearch').value;
+
+  admPets(keyword);
+}
+
+async function viewPet(id) {
+
+  const p = await api(`/api/pets/${id}`);
+
+  document.getElementById('admModalTitle').textContent =
+    `🐾 Chi tiết ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-grid adm-g2">
+
+      <div>
+        <strong>Mã:</strong>
+        <div>${p.id}</div>
+      </div>
+
+      <div>
+        <strong>Tên:</strong>
+        <div>${p.name}</div>
+      </div>
+
+      <div>
+        <strong>Loài:</strong>
+        <div>${p.species}</div>
+      </div>
+
+      <div>
+        <strong>Giống:</strong>
+        <div>${p.breed}</div>
+      </div>
+
+      <div>
+        <strong>Tuổi:</strong>
+        <div>${p.age}</div>
+      </div>
+
+      <div>
+        <strong>Giới tính:</strong>
+        <div>${p.gender}</div>
+      </div>
+
+      <div>
+        <strong>Chủ nuôi:</strong>
+        <div>${p.owner_name || 'N/A'}</div>
+      </div>
+
+      <div>
+        <strong>Chip:</strong>
+        <div>${p.chip || 'Không có'}</div>
+      </div>
+
+      <div>
+        <strong>Dị ứng:</strong>
+        <div>${p.allergies || 'Không'}</div>
+      </div>
+
+      <div>
+        <strong>Trạng thái:</strong>
+        <div>${p.status}</div>
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Đóng
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function editPet(id) {
+
+  const p = await api(`/api/pets/${id}`);
+
+  document.getElementById('admModalTitle').textContent =
+    `✏️ Chỉnh sửa ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Tên</label>
+        <input class="adm-input" id="ePetName" value="${p.name}">
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Loài</label>
+        <input class="adm-input" id="ePetSpecies" value="${p.species}">
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Giống</label>
+        <input class="adm-input" id="ePetBreed" value="${p.breed}">
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Tuổi</label>
+        <input class="adm-input" type="number" id="ePetAge" value="${p.age}">
+      </div>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="updatePet('${p.id}')"
+    >
+      💾 Lưu
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function updatePet(id) {
+
+  const payload = {
+
+    name: document.getElementById('ePetName').value,
+
+    species: document.getElementById('ePetSpecies').value,
+
+    breed: document.getElementById('ePetBreed').value,
+
+    age: document.getElementById('ePetAge').value,
+  };
+
+  const d = await api(`/api/pets/${id}`, {
+
+    method: 'PUT',
+
+    body: JSON.stringify(payload)
+  });
+
+  admCloseModal();
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+async function deletePet(id) {
+
+  if (!confirm('Bạn có chắc muốn xóa thú cưng này?')) {
+    return;
+  }
+
+  const d = await api(`/api/pets/${id}`, {
+
+    method: 'DELETE'
+  });
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+// CUSTOMERS 
 async function admCustomers() {
   const customers = await api('/api/customers');
   document.getElementById('admContent').innerHTML = `
@@ -171,7 +454,7 @@ async function admCustomers() {
   </div>`;
 }
 
-// ── INVENTORY ─────────────────────────────────────────────────────────────
+// INVENTORY
 async function admInventory() {
   const items = await api('/api/inventory');
   const alerts = items.filter(i => i.status !== 'OK');
@@ -211,7 +494,7 @@ async function admInventory() {
   </div>`;
 }
 
-// ── APPOINTMENTS ──────────────────────────────────────────────────────────
+// APPOINTMENTS 
 async function admAppointments() {
   const apts = await api('/api/appointments');
   document.getElementById('admContent').innerHTML = `
@@ -253,7 +536,7 @@ async function cancelApt(id) {
   admRender();
 }
 
-// ── BOARDING ──────────────────────────────────────────────────────────────
+// BOARDING
 async function admBoarding() {
   const rooms = await api('/api/rooms');
   const occupied = rooms.filter(r => r.status === 'occupied').length;
@@ -282,7 +565,7 @@ async function admBoarding() {
   </div>`;
 }
 
-// ── POS ───────────────────────────────────────────────────────────────────
+// POS 
 const posItems = [
   {id:'ps1',name:'Hạt Royal Canin',icon:'🎁',price:320000},
   {id:'ps2',name:'Pate Whiskas',icon:'🐟',price:25000},
@@ -349,7 +632,7 @@ function admUpdateCart() {
   el.innerHTML = admCart.length === 0 ? '<div class="text-muted text-sm" style="text-align:center;padding:30px 0">Chưa có sản phẩm</div>' : admCart.map(admCartItemHtml).join('');
 }
 
-// ── ORDERS ────────────────────────────────────────────────────────────────
+// ORDERS 
 async function admOrders() {
   const orders = await api('/api/orders');
   document.getElementById('admContent').innerHTML = `
@@ -382,7 +665,7 @@ async function confirmOrder(id) {
   admRender();
 }
 
-// ── PROMOTIONS ────────────────────────────────────────────────────────────
+// PROMOTIONS 
 async function admPromotions() {
   const promos = await api('/api/promotions');
   document.getElementById('admContent').innerHTML = `
@@ -407,8 +690,8 @@ async function deletePromo(id) {
   admRender();
 }
 
-// ── VENDORS ───────────────────────────────────────────────────────────────
-async function admVendors() {
+  // VENDORS
+  async function admVendors() {
   const vendors = await api('/api/vendors');
   const totalDebt = vendors.reduce((s, v) => s + v.debt, 0);
   document.getElementById('admContent').innerHTML = `
@@ -427,7 +710,7 @@ async function admVendors() {
   </div>`;
 }
 
-// ── STAFF ─────────────────────────────────────────────────────────────────
+// STAFF 
 async function admStaff() {
   const staff = await api('/api/staff');
   document.getElementById('admContent').innerHTML = `
@@ -450,7 +733,7 @@ async function admStaff() {
   </div>`;
 }
 
-// ── REPORTS ───────────────────────────────────────────────────────────────
+// REPORTS
 async function admReports() {
   const [dash, staff] = await Promise.all([api('/api/dashboard'), api('/api/staff')]);
   const rev = dash.monthly_revenue;
@@ -491,7 +774,7 @@ async function admReports() {
   </div>`;
 }
 
-// ── ADMIN MODAL ───────────────────────────────────────────────────────────
+// ADMIN MODAL 
 function admShowModal(type) {
   const cfg = {
     addPet: {
