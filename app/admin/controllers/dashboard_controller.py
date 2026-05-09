@@ -351,8 +351,125 @@ def api_confirm_order(order_id):
     return jsonify({'ok': True, 'message': f'Đã xác nhận đơn {order_id}!'})
 
 
-# BOOKINGS (admin view)
-@admin_bp.route('/api/bookings')
-def api_bookings():
+# ── BOOKINGS (from user) - ADMIN MANAGEMENT ──────────────────────────────
+@admin_bp.route('/bookings')
+def bookings_page():
+
+    from app.user.models.booking_model import Booking
+
+    bookings = Booking.query.order_by(
+        Booking.id.desc()
+    ).all()
+
+    total = len(bookings)
+
+    pending = len([
+        b for b in bookings
+        if b.status == 'Chờ xác nhận'
+    ])
+
+    confirmed = len([
+        b for b in bookings
+        if b.status == 'Đã xác nhận'
+    ])
+
+    completed = len([
+        b for b in bookings
+        if b.status == 'Hoàn thành'
+    ])
+
+    cancelled = len([
+        b for b in bookings
+        if b.status == 'Đã hủy'
+    ])
+
+    return render_template(
+        'admin/bookings.html',
+        bookings=bookings,
+        total=total,
+        pending=pending,
+        confirmed=confirmed,
+        completed=completed,
+        cancelled=cancelled
+    )
+
+@admin_bp.route('/bookings')
+def bookings():
+    """Xem danh sách bookings"""
     bookings = Booking.query.order_by(Booking.created_at.desc()).all()
+    return render_template('admin/bookings.html', 
+                          bookings=bookings,
+                          total=len(bookings))
+
+
+@admin_bp.route('/api/bookings')
+def api_get_bookings():
+    """API lấy danh sách bookings (JSON)"""
+    status = request.args.get('status', '', type=str)
+    
+    query = Booking.query
+    if status:
+        query = query.filter_by(status=status)
+    
+    bookings = query.order_by(Booking.created_at.desc()).all()
     return jsonify([b.to_dict() for b in bookings])
+
+
+@admin_bp.route('/api/booking/<int:booking_id>/confirm', methods=['POST'])
+def api_confirm_booking(booking_id):
+    """API xác nhận booking"""
+    try:
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return jsonify({'ok': False, 'message': 'Booking không tồn tại!'}), 404
+        
+        booking.status = 'Xác nhận'
+        db.session.commit()
+        
+        return jsonify({
+            'ok': True,
+            'message': f'✅ Đã xác nhận lịch hẹn cho {booking.full_name}'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/booking/<int:booking_id>/reject', methods=['POST'])
+def api_reject_booking(booking_id):
+    """API hủy booking"""
+    try:
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return jsonify({'ok': False, 'message': 'Booking không tồn tại!'}), 404
+        
+        booking.status = 'Hủy'
+        db.session.commit()
+        
+        return jsonify({
+            'ok': True,
+            'message': f'❌ Đã hủy lịch hẹn cho {booking.full_name}'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/api/booking/<int:booking_id>/complete', methods=['POST'])
+def api_complete_booking(booking_id):
+    """API đánh dấu hoàn thành"""
+    try:
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return jsonify({'ok': False, 'message': 'Booking không tồn tại!'}), 404
+        
+        booking.status = 'Hoàn thành'
+        db.session.commit()
+        
+        return jsonify({
+            'ok': True,
+            'message': f'✅ Đã hoàn thành lịch hẹn cho {booking.full_name}'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'ok': False, 'message': str(e)}), 500
