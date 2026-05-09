@@ -38,7 +38,7 @@ async function admRender() {
     dashboard: admDashboard, pets: admPets, customers: admCustomers,
     inventory: admInventory, appointments: admAppointments, boarding: admBoarding,
     pos: admPOS, orders: admOrders, promotions: admPromotions,
-    vendors: admVendors, staff: admStaff, reports: admReports,
+    vendors: admVendors, staff: admStaff, reports: admReports,bookings: admBookings,
   };
   await (pages[admPage] || admDashboard)();
 }
@@ -525,6 +525,27 @@ async function admAppointments() {
   </div>`;
 }
 
+// ── BOOKINGS ONLINE ─────────────────────────────────────
+async function admBookings() {
+
+    const res = await fetch('/admin/bookings');
+    const html = await res.text();
+
+    document.getElementById('admContent').innerHTML = html;
+
+    loadBookings();
+
+    const modal = document.getElementById('actionModal');
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+}
+
 async function confirmApt(id) {
   const d = await api(`/api/appointments/${id}/confirm`, { method: 'PATCH' });
   toast(d.message, 'success');
@@ -858,4 +879,402 @@ async function savePromotion() {
   admCloseModal();
   toast(d.message, 'success');
   admRender();
+}
+
+// ───────────────── BOOKINGS ─────────────────
+
+let currentAction = null;
+let currentBookingId = null;
+
+async function admBookings() {
+
+    const res = await fetch('/admin/bookings');
+    const html = await res.text();
+
+    document.getElementById('admContent').innerHTML = html;
+
+    loadBookings();
+
+    const modal = document.getElementById('actionModal');
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+}
+
+async function loadBookings(status = '') {
+
+    try {
+
+        const url = status
+            ? `/admin/api/bookings?status=${status}`
+            : '/admin/api/bookings';
+
+        const res = await fetch(url);
+
+        const bookings = await res.json();
+
+        renderBookings(bookings);
+
+        updateStats(bookings);
+
+    } catch (error) {
+
+        console.error(error);
+
+        showToast('Lỗi khi tải dữ liệu', 'error');
+    }
+}
+
+function renderBookings(bookings) {
+
+    const tbody = document.getElementById('bookingsList');
+
+    const emptyState = document.getElementById('emptyState');
+
+    if (!bookings || bookings.length === 0) {
+
+        tbody.innerHTML = '';
+
+        emptyState.style.display = 'block';
+
+        return;
+    }
+
+    emptyState.style.display = 'none';
+
+    tbody.innerHTML = bookings.map(b => `
+
+        <tr>
+
+            <td>
+                <span class="booking-id">#${b.id}</span>
+            </td>
+
+            <td>
+
+                <div class="customer-info">
+
+                    <span class="customer-name">
+                        ${b.full_name}
+                    </span>
+
+                    <span class="customer-phone">
+                        ${b.phone}
+                    </span>
+
+                    ${b.pet_name
+                        ? `<div class="pet-info">
+                            Thú: ${b.pet_name}
+                            ${b.breed ? '(' + b.breed + ')' : ''}
+                           </div>`
+                        : ''
+                    }
+
+                </div>
+
+            </td>
+
+            <td>
+                <span class="service-badge">
+                    ${b.service}
+                </span>
+            </td>
+
+            <td>
+
+                <div class="date-time">
+
+                    <strong>
+                        ${formatDate(b.date)}
+                    </strong>
+
+                    ${b.time_slot}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <span class="status ${getStatusClass(b.status)}">
+
+                    ${getStatusIcon(b.status)}
+                    ${b.status}
+
+                </span>
+
+            </td>
+
+            <td>
+
+                <div class="notes">
+
+                    ${b.notes || '-'}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="actions">
+                    ${getActionButtons(b.id, b.status)}
+                </div>
+
+            </td>
+
+        </tr>
+
+    `).join('');
+}
+
+function getActionButtons(id, status) {
+
+    let buttons = '';
+
+    if (status === 'Chờ xác nhận') {
+
+        buttons += `
+            <button class="btn btn-confirm"
+                    onclick="askAction(${id}, 'confirm')">
+                ✓ Xác nhận
+            </button>
+        `;
+
+        buttons += `
+            <button class="btn btn-reject"
+                    onclick="askAction(${id}, 'reject')">
+                ✕ Hủy
+            </button>
+        `;
+    }
+
+    else if (status === 'Xác nhận') {
+
+        buttons += `
+            <button class="btn btn-complete"
+                    onclick="askAction(${id}, 'complete')">
+                ✓ Hoàn thành
+            </button>
+        `;
+
+        buttons += `
+            <button class="btn btn-reject"
+                    onclick="askAction(${id}, 'reject')">
+                ✕ Hủy
+            </button>
+        `;
+    }
+
+    return buttons || '<span style="color:#999">-</span>';
+}
+
+function askAction(bookingId, action) {
+
+    currentBookingId = bookingId;
+
+    currentAction = action;
+
+    const titles = {
+        confirm: '✅ Xác Nhận Lịch Hẹn',
+        reject: '❌ Hủy Lịch Hẹn',
+        complete: '🎉 Hoàn Thành Dịch Vụ'
+    };
+
+    const messages = {
+        confirm: 'Xác nhận lịch hẹn này?',
+        reject: 'Hủy lịch hẹn này?',
+        complete: 'Đánh dấu đã hoàn thành?'
+    };
+
+    document.getElementById('modalTitle').textContent =
+        titles[action];
+
+    document.getElementById('modalBody').textContent =
+        messages[action];
+
+    document.getElementById('actionModal')
+        .classList.add('show');
+}
+
+function closeModal() {
+
+    document.getElementById('actionModal')
+        .classList.remove('show');
+}
+
+async function executeAction() {
+
+    if (!currentAction || !currentBookingId)
+        return;
+
+    closeModal();
+
+    const endpoints = {
+
+        confirm:
+            `/admin/api/booking/${currentBookingId}/confirm`,
+
+        reject:
+            `/admin/api/booking/${currentBookingId}/reject`,
+
+        complete:
+            `/admin/api/booking/${currentBookingId}/complete`
+    };
+
+    try {
+
+        const res = await fetch(
+            endpoints[currentAction],
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const data = await res.json();
+
+        if (data.ok) {
+
+            showToast(data.message, 'success');
+
+            loadBookings();
+
+        } else {
+
+            showToast(data.message, 'error');
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        showToast('Lỗi thao tác', 'error');
+    }
+}
+
+function filterStatus(event, status)
+{
+    if(event)
+    {
+        document
+            .querySelectorAll('.filter-btn')
+            .forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+        event.target.classList.add('active');
+    }
+
+    const rows = document.querySelectorAll(
+        '#bookingsList tr'
+    );
+
+    rows.forEach(row => {
+
+        const statusText =
+            row.children[4].innerText.trim();
+
+        if(status === 'all')
+        {
+            row.style.display = '';
+        }
+        else if(statusText.includes(status))
+        {
+            row.style.display = '';
+        }
+        else
+        {
+            row.style.display = 'none';
+        }
+
+    });
+}
+
+function updateStats(bookings) {
+
+    const stats = {
+        'Chờ xác nhận': 0,
+        'Xác nhận': 0,
+        'Hoàn thành': 0,
+        'Hủy': 0
+    };
+
+    bookings.forEach(b => {
+
+        if (stats.hasOwnProperty(b.status)) {
+            stats[b.status]++;
+        }
+    });
+
+    document.getElementById('pendingCount')
+        .textContent = stats['Chờ xác nhận'];
+
+    document.getElementById('confirmedCount')
+        .textContent = stats['Xác nhận'];
+
+    document.getElementById('completedCount')
+        .textContent = stats['Hoàn thành'];
+}
+
+function formatDate(dateStr) {
+
+    const date =
+        new Date(dateStr + 'T00:00:00');
+
+    return date.toLocaleDateString('vi-VN', {
+
+        weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
+function getStatusClass(status) {
+
+    const map = {
+
+        'Chờ xác nhận': 'pending',
+        'Xác nhận': 'confirmed',
+        'Hoàn thành': 'completed',
+        'Hủy': 'cancelled'
+    };
+
+    return map[status] || 'pending';
+}
+
+function getStatusIcon(status) {
+
+    const map = {
+
+        'Chờ xác nhận': '⏳',
+        'Xác nhận': '✅',
+        'Hoàn thành': '🎉',
+        'Hủy': '❌'
+    };
+
+    return map[status] || '❓';
+}
+
+function showToast(message, type = 'info') {
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast ${type}`;
+
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
