@@ -10,6 +10,15 @@ from app.admin.models.order_model import Order
 from app.user.models.product_model import Product
 from app.user.models.pet_model import Pet
 from app.user.models.booking_model import Booking
+from app.admin.models.medical_record_model import MedicalRecord
+from app.admin.models.reminder_model import Reminder
+from app.admin.models.service_history_model import ServiceHistory
+from app.admin.models.category_model import Category
+from app.admin.models.import_receipt_model import ImportReceipt
+from app.admin.models.import_receipt_detail_model import ImportReceiptDetail
+from app.admin.models.export_receipt_model import ExportReceipt
+from app.admin.models.export_receipt_detail_model import ExportReceiptDetail
+from app.admin.models.inventory_history_model import InventoryHistory
 from app import db
 
 admin_bp = Blueprint('admin', __name__)
@@ -198,6 +207,7 @@ def api_customers():
     for c in customers:
         d = c.to_dict()
         d['pets_count'] = len(c.pets)
+        d['pets'] = [p.name for p in c.pets]
         result.append(d)
     return jsonify(result)
 
@@ -207,33 +217,289 @@ def api_add_customer():
     data = request.get_json(force=True)
     import uuid
     customer = Customer(
-        id    = 'C' + str(uuid.uuid4())[:6].upper(),
-        name  = data.get('name', ''),
-        phone = data.get('phone', ''),
-        email = data.get('email', ''),
-        level = 'Bronze',
+        id='C' + str(uuid.uuid4())[:6].upper(),
+        name=data.get('name', ''),
+        phone=data.get('phone', ''),
+        email=data.get('email', ''),
+        address=data.get('address', ''),
+        level='Bronze',
     )
     db.session.add(customer)
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã thêm khách hàng!'})
 
 
-# INVENTORY
+# =========================================================
+# INVENTORY / PRODUCT MANAGEMENT
+# =========================================================
+
+# GET ALL + SEARCH + FILTER
 @admin_bp.route('/api/inventory')
 def api_inventory():
-    items = Inventory.query.all()
-    return jsonify([i.to_dict() for i in items])
+
+    search = request.args.get('search', '').strip()
+
+    category = request.args.get('category', '').strip()
+
+    brand = request.args.get('brand', '').strip()
+
+    stock = request.args.get('stock', '').strip()
+
+    min_price = request.args.get('min_price', type=int)
+
+    max_price = request.args.get('max_price', type=int)
+
+    query = Inventory.query
+
+    # SEARCH
+    if search:
+
+        query = query.filter(
+
+            (Inventory.name.ilike(f'%{search}%')) |
+
+            (Inventory.id.ilike(f'%{search}%')) |
+
+            (Inventory.barcode.ilike(f'%{search}%'))
+
+        )
+
+    # FILTER CATEGORY
+    if category:
+
+        query = query.filter(
+            Inventory.category == category
+        )
+
+    # FILTER BRAND
+    if brand:
+
+        query = query.filter(
+            Inventory.brand == brand
+        )
+
+    # FILTER STOCK
+    if stock == 'low':
+
+        query = query.filter(
+            Inventory.quantity < Inventory.min_qty
+        )
+
+    elif stock == 'out':
+
+        query = query.filter(
+            Inventory.quantity <= 0
+        )
+
+    elif stock == 'available':
+
+        query = query.filter(
+            Inventory.quantity > 0
+        )
+
+    # FILTER PRICE
+    if min_price is not None:
+
+        query = query.filter(
+            Inventory.sell_price >= min_price
+        )
+
+    if max_price is not None:
+
+        query = query.filter(
+            Inventory.sell_price <= max_price
+        )
+
+    items = query.all()
+
+    return jsonify([
+        i.to_dict()
+        for i in items
+    ])
 
 
-@admin_bp.route('/api/inventory/<item_id>', methods=['PATCH'])
-def api_update_inventory(item_id):
+# GET DETAIL
+@admin_bp.route('/api/inventory/<string:item_id>')
+def api_inventory_detail(item_id):
+
     item = Inventory.query.get_or_404(item_id)
+
+    return jsonify(item.to_dict())
+
+
+# CREATE PRODUCT
+@admin_bp.route('/api/inventory', methods=['POST'])
+def api_add_inventory():
+
     data = request.get_json(force=True)
-    if 'quantity' in data:
-        item.quantity = int(data['quantity'])
-        item.status = 'OK' if item.quantity >= item.min_qty else 'Sắp hết'
+
+    import uuid
+
+    item = Inventory(
+
+        id='SP' + str(uuid.uuid4())[:5].upper(),
+
+        name=data.get('name', ''),
+
+        category=data.get('category', ''),
+
+        brand=data.get('brand', ''),
+
+        import_price=int(
+            data.get('import_price', 0)
+        ),
+
+        sell_price=int(
+            data.get('sell_price', 0)
+        ),
+
+        quantity=int(
+            data.get('quantity', 0)
+        ),
+
+        min_qty=int(
+            data.get('min_qty', 5)
+        ),
+
+        unit=data.get('unit', ''),
+
+        expiry=data.get('expiry', ''),
+
+        supplier=data.get('supplier', ''),
+
+        image=data.get('image', ''),
+
+        barcode=data.get('barcode', ''),
+
+        description=data.get(
+            'description',
+            ''
+        ),
+    )
+
+    item.update_status()
+
+    db.session.add(item)
+
     db.session.commit()
-    return jsonify({'ok': True, 'message': 'Đã cập nhật kho hàng!'})
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã thêm sản phẩm!'
+    })
+
+
+# UPDATE PRODUCT
+@admin_bp.route(
+    '/api/inventory/<string:item_id>',
+    methods=['PUT']
+)
+def api_update_inventory(item_id):
+
+    item = Inventory.query.get_or_404(item_id)
+
+    data = request.get_json(force=True)
+
+    item.name = data.get(
+        'name',
+        item.name
+    )
+
+    item.category = data.get(
+        'category',
+        item.category
+    )
+
+    item.brand = data.get(
+        'brand',
+        item.brand
+    )
+
+    item.import_price = int(
+        data.get(
+            'import_price',
+            item.import_price
+        )
+    )
+
+    item.sell_price = int(
+        data.get(
+            'sell_price',
+            item.sell_price
+        )
+    )
+
+    item.quantity = int(
+        data.get(
+            'quantity',
+            item.quantity
+        )
+    )
+
+    item.min_qty = int(
+        data.get(
+            'min_qty',
+            item.min_qty
+        )
+    )
+
+    item.unit = data.get(
+        'unit',
+        item.unit
+    )
+
+    item.expiry = data.get(
+        'expiry',
+        item.expiry
+    )
+
+    item.supplier = data.get(
+        'supplier',
+        item.supplier
+    )
+
+    item.image = data.get(
+        'image',
+        item.image
+    )
+
+    item.barcode = data.get(
+        'barcode',
+        item.barcode
+    )
+
+    item.description = data.get(
+        'description',
+        item.description
+    )
+
+    item.update_status()
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã cập nhật sản phẩm!'
+    })
+
+
+# DELETE PRODUCT
+@admin_bp.route(
+    '/api/inventory/<string:item_id>',
+    methods=['DELETE']
+)
+def api_delete_inventory(item_id):
+
+    item = Inventory.query.get_or_404(item_id)
+
+    db.session.delete(item)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã xóa sản phẩm!'
+    })
 
 
 # APPOINTMENTS
@@ -351,7 +617,7 @@ def api_confirm_order(order_id):
     return jsonify({'ok': True, 'message': f'Đã xác nhận đơn {order_id}!'})
 
 
-# ── BOOKINGS (from user) - ADMIN MANAGEMENT ──────────────────────────────
+# BOOKINGS
 @admin_bp.route('/bookings')
 def bookings_page():
 
@@ -473,3 +739,508 @@ def api_complete_booking(booking_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'ok': False, 'message': str(e)}), 500
+    
+# MEDICAL RECORDS
+
+@admin_bp.route('/api/medical-records/<pet_id>')
+def api_medical_records(pet_id):
+
+    records = MedicalRecord.query.filter_by(
+        pet_id=pet_id
+    ).all()
+
+    return jsonify([r.to_dict() for r in records])
+
+
+@admin_bp.route(
+    '/api/medical-records',
+    methods=['POST']
+)
+def api_add_medical_record():
+
+    data = request.get_json(force=True)
+
+    record = MedicalRecord(
+
+        pet_id=data.get('pet_id'),
+
+        visit_date=data.get('visit_date'),
+
+        diagnosis=data.get('diagnosis'),
+
+        doctor=data.get('doctor'),
+
+        medicine=data.get('medicine'),
+
+        allergies=data.get('allergies'),
+
+        vaccine=data.get('vaccine'),
+
+        condition=data.get('condition'),
+
+        test_result=data.get('test_result'),
+    )
+
+    db.session.add(record)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã lưu hồ sơ y tế!'
+    })
+
+@admin_bp.route('/api/reminders')
+def api_reminders():
+
+    reminders = Reminder.query.all()
+
+    return jsonify([
+        r.to_dict()
+        for r in reminders
+    ])
+
+
+@admin_bp.route(
+    '/api/reminders',
+    methods=['POST']
+)
+def api_add_reminder():
+
+    data = request.get_json(force=True)
+
+    reminder = Reminder(
+
+        pet_id=data.get('pet_id'),
+
+        reminder_type=data.get('reminder_type'),
+
+        reminder_date=data.get('reminder_date'),
+
+        note=data.get('note'),
+    )
+
+    db.session.add(reminder)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã tạo nhắc lịch!'
+    })  
+
+@admin_bp.route('/api/service-history/<pet_id>')
+def api_service_history(pet_id):
+
+    services = ServiceHistory.query.filter_by(
+        pet_id=pet_id
+    ).all()
+
+    return jsonify([
+        s.to_dict()
+        for s in services
+    ])
+
+
+@admin_bp.route(
+    '/api/service-history',
+    methods=['POST']
+)
+def api_add_service_history():
+
+    data = request.get_json(force=True)
+
+    service = ServiceHistory(
+
+        pet_id=data.get('pet_id'),
+
+        service_name=data.get('service_name'),
+
+        service_date=data.get('service_date'),
+
+        status=data.get('status'),
+
+        price=int(data.get('price', 0)),
+
+        note=data.get('note'),
+    )
+
+    db.session.add(service)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã lưu dịch vụ!'
+    })
+
+# GET ALL
+@admin_bp.route('/api/categories')
+def api_categories():
+
+    categories = Category.query.all()
+
+    return jsonify([
+        c.to_dict()
+        for c in categories
+    ])
+
+# CREATE
+@admin_bp.route(
+    '/api/categories',
+    methods=['POST']
+)
+def api_add_category():
+
+    data = request.get_json(force=True)
+
+    import uuid
+
+    category = Category(
+
+        id='CAT' + str(uuid.uuid4())[:5].upper(),
+
+        name=data.get('name', ''),
+
+        description=data.get(
+            'description',
+            ''
+        )
+    )
+
+    db.session.add(category)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã thêm danh mục!'
+    })
+
+# UPDATE
+@admin_bp.route(
+    '/api/categories/<string:category_id>',
+    methods=['PUT']
+)
+def api_update_category(category_id):
+
+    category = Category.query.get_or_404(
+        category_id
+    )
+
+    data = request.get_json(force=True)
+
+    category.name = data.get(
+        'name',
+        category.name
+    )
+
+    category.description = data.get(
+        'description',
+        category.description
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã cập nhật danh mục!'
+    })
+
+# DELETE
+@admin_bp.route(
+    '/api/categories/<string:category_id>',
+    methods=['DELETE']
+)
+def api_delete_category(category_id):
+
+    category = Category.query.get_or_404(
+        category_id
+    )
+
+    db.session.delete(category)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã xóa danh mục!'
+    })
+
+@admin_bp.route(
+    '/api/import-receipts',
+    methods=['GET']
+)
+def api_import_receipts():
+
+    receipts = ImportReceipt.query.order_by(
+        ImportReceipt.import_date.desc()
+    ).all()
+
+    return jsonify([
+        r.to_dict()
+        for r in receipts
+    ])
+
+
+@admin_bp.route(
+    '/api/import-receipts',
+    methods=['POST']
+)
+def api_add_import_receipt():
+
+    data = request.get_json(force=True)
+
+    import uuid
+
+    receipt = ImportReceipt(
+
+        id='IMP' + str(uuid.uuid4())[:6].upper(),
+
+        supplier_id=data.get(
+            'supplier_id'
+        ),
+
+        import_date=data.get(
+            'import_date'
+        ),
+
+        created_by=data.get(
+            'created_by'
+        ),
+
+        note=data.get('note', ''),
+
+        total_amount=0
+    )
+
+    db.session.add(receipt)
+
+    total = 0
+
+    for item in data.get('details', []):
+
+        product = Inventory.query.get(
+            item.get('product_id')
+        )
+
+        if not product:
+            continue
+
+        qty = int(item.get('quantity', 0))
+
+        price = int(
+            item.get('import_price', 0)
+        )
+
+        subtotal = qty * price
+
+        detail = ImportReceiptDetail(
+
+            receipt_id=receipt.id,
+
+            product_id=product.id,
+
+            quantity=qty,
+
+            import_price=price,
+
+            subtotal=subtotal
+        )
+
+        db.session.add(detail)
+
+        # AUTO UPDATE STOCK
+        product.quantity += qty
+        history = InventoryHistory(
+
+            product_id=product.id,
+
+            action='Nhập kho',
+
+            quantity_change=qty,
+
+            created_at=data.get(
+                'import_date'
+            ),
+
+            created_by=data.get(
+                'created_by'
+            ),
+
+            note='Nhập hàng'
+        )
+
+        db.session.add(history)
+
+        product.import_price = price
+
+        product.update_status()
+
+        total += subtotal
+
+    receipt.total_amount = total
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã nhập kho!'
+    })
+
+@admin_bp.route(
+    '/api/export-receipts',
+    methods=['POST']
+)
+def api_export_receipt():
+
+    data = request.get_json(force=True)
+
+    import uuid
+
+    receipt = ExportReceipt(
+
+        id='EXP' + str(uuid.uuid4())[:6].upper(),
+
+        export_type=data.get(
+            'export_type'
+        ),
+
+        export_date=data.get(
+            'export_date'
+        ),
+
+        created_by=data.get(
+            'created_by'
+        ),
+
+        note=data.get('note', '')
+    )
+
+    db.session.add(receipt)
+
+    for item in data.get('details', []):
+
+        product = Inventory.query.get(
+            item.get('product_id')
+        )
+
+        if not product:
+            continue
+
+        qty = int(item.get('quantity', 0))
+
+        # TRỪ KHO
+        product.quantity -= qty
+        history = InventoryHistory(
+
+            product_id=product.id,
+
+            action=data.get(
+                'export_type',
+                'Xuất kho'
+            ),
+
+            quantity_change=-qty,
+
+            created_at=data.get(
+                'export_date'
+            ),
+
+            created_by=data.get(
+                'created_by'
+            ),
+
+            note=data.get('note', '')
+        )
+
+        db.session.add(history)
+
+        if product.quantity < 0:
+            product.quantity = 0
+
+        product.update_status()
+
+        detail = ExportReceiptDetail(
+
+            receipt_id=receipt.id,
+
+            product_id=product.id,
+
+            quantity=qty
+        )
+
+        db.session.add(detail)
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Đã xuất kho!'
+    })
+
+@admin_bp.route('/api/inventory-alerts')
+def api_inventory_alerts():
+
+    low_stock = Inventory.query.filter(
+        Inventory.quantity < Inventory.min_qty
+    ).count()
+
+    out_stock = Inventory.query.filter(
+        Inventory.quantity <= 0
+    ).count()
+
+    over_stock = Inventory.query.filter(
+        Inventory.quantity > 200
+    ).count()
+
+    items = Inventory.query.all()
+
+    expiring = 0
+
+    from datetime import datetime
+
+    for item in items:
+
+        if not item.expiry:
+            continue
+
+        try:
+
+            expiry_date = datetime.strptime(
+                item.expiry,
+                '%Y-%m-%d'
+            )
+
+            days = (
+                expiry_date - datetime.now()
+            ).days
+
+            if days < 30:
+                expiring += 1
+
+        except:
+            pass
+
+    return jsonify({
+
+        'low_stock': low_stock,
+
+        'out_stock': out_stock,
+
+        'over_stock': over_stock,
+
+        'expiring': expiring,
+    })
+
+@admin_bp.route('/api/inventory-history')
+def api_inventory_history():
+
+    history = InventoryHistory.query.order_by(
+        InventoryHistory.id.desc()
+    ).all()
+
+    return jsonify([
+        h.to_dict()
+        for h in history
+    ])
