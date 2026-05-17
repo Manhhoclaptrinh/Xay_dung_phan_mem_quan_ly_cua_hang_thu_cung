@@ -5,7 +5,8 @@ const admLabels = {
   dashboard: 'Dashboard', pets: 'Hồ sơ Thú cưng', customers: 'Khách hàng',
   inventory: 'Kho hàng', appointments: 'Lịch dịch vụ', boarding: 'Lưu trú (Hotel)',
   pos: 'Bán hàng (POS)', orders: 'Đơn hàng online', promotions: 'Khuyến mãi',
-  vendors: 'Nhà cung cấp', staff: 'Nhân viên', reports: 'Báo cáo',
+  vendors: 'Nhà cung cấp', staff: 'Nhân viên', reports: 'Báo cáo', reminders: 'Lịch tiêm phòng',
+  services: 'Dịch vụ đã sử dụng',
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -38,7 +39,8 @@ async function admRender() {
     dashboard: admDashboard, pets: admPets, customers: admCustomers,
     inventory: admInventory, appointments: admAppointments, boarding: admBoarding,
     pos: admPOS, orders: admOrders, promotions: admPromotions,
-    vendors: admVendors, staff: admStaff, reports: admReports,bookings: admBookings,
+    vendors: admVendors, staff: admStaff, reports: admReports,bookings: admBookings, 
+    reminders: admReminders, services: admServices,
   };
   await (pages[admPage] || admDashboard)();
 }
@@ -219,6 +221,12 @@ async function admPets(search = '') {
                   🗑
                 </button>
 
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="viewMedical('${p.id}')"
+                >
+                  🏥
+                </button>
               </div>
 
             </td>
@@ -434,7 +442,7 @@ async function admCustomers() {
   <div class="adm-card" style="padding:0">
     <div class="adm-table-wrap">
       <table class="adm-table">
-        <thead><tr><th>Khách hàng</th><th>Liên hệ</th><th>Hạng</th><th>Điểm</th><th>Tổng chi</th><th>Từ ngày</th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>Khách hàng</th><th>Liên hệ</th><th>Hạng</th><th>Điểm</th><th>Tổng chi</th><th>Từ ngày</th><th>Thao tác</th><th>Thú cưng</th></tr></thead>
         <tbody>
           ${customers.map(c => {
             const lc = {Diamond:'blue',Gold:'gold',Silver:'purple',Bronze:'orange'}[c.level];
@@ -445,6 +453,11 @@ async function admCustomers() {
               <td class="font-bold text-gold">${c.points}</td>
               <td class="font-bold text-accent">${fmt(c.total_spent)}</td>
               <td class="text-sm text-muted">${c.join_date}</td>
+              <td>
+                ${c.pets.map(p =>
+                  `<span class="adm-tag adm-tag-blue">${p}</span>`
+                ).join('')}
+              </td>
               <td><div class="flex gap6"><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Xem ${c.name}','info')">👁</button><button class="adm-btn adm-btn-sec adm-btn-sm">✏️</button></div></td>
             </tr>`;
           }).join('')}
@@ -455,43 +468,1331 @@ async function admCustomers() {
 }
 
 // INVENTORY
-async function admInventory() {
-  const items = await api('/api/inventory');
-  const alerts = items.filter(i => i.status !== 'OK');
+async function admInventory(
+  search = '',
+  category = '',
+  brand = '',
+  stock = ''
+) {
+
+  const items = await api(
+    `/api/inventory?search=${search}&category=${category}&brand=${brand}&stock=${stock}`
+  );
+
+  const alerts = await api('/api/inventory-alerts');
+
+  const categories = await api('/api/categories');
+
   document.getElementById('admContent').innerHTML = `
+
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Kho hàng</div><div class="adm-page-sub">${items.length} mặt hàng · ${alerts.length} cần xử lý</div></div>
-    <button class="adm-btn adm-btn-primary" onclick="admShowModal('addProduct')">+ Thêm sản phẩm</button>
-  </div>
-  ${alerts.length ? `<div style="background:var(--gold-bg);border:1px solid rgba(201,136,10,.25);border-radius:var(--r);padding:14px 18px;margin-bottom:16px">
-    <div class="fxc gap8 mb8"><span>⚠️</span><strong class="text-sm">Cảnh báo kho hàng:</strong></div>
-    ${alerts.map(a => `<div class="text-sm" style="margin-top:5px">• <strong>${a.name}</strong>: ${a.status} (còn ${a.quantity})</div>`).join('')}
-  </div>` : ''}
-  <div class="adm-card" style="padding:0">
-    <div class="adm-table-wrap">
-      <table class="adm-table">
-        <thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Tồn kho</th><th>Đơn giá</th><th>Hạn SD</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-        <tbody>
-          ${items.map(item => {
-            const sc = {OK:'green','Sắp hết':'orange','Sắp hết hạn':'red'}[item.status] || 'orange';
-            const pct = Math.min(100, Math.round(item.quantity / Math.max(item.min_qty * 3, 1) * 100));
-            return `<tr>
-              <td><div class="font-bold">${item.name}</div><div class="text-muted text-sm">${item.unit}</div></td>
-              <td><span class="adm-tag adm-tag-blue">${item.category}</span></td>
-              <td>
-                <div class="fxb mb8" style="max-width:100px"><span class="font-bold">${item.quantity}</span><span class="text-muted text-sm">min:${item.min_qty}</span></div>
-                <div class="adm-progress" style="width:90px"><div class="adm-progress-fill" style="width:${pct}%;background:var(--${item.status==='OK'?'teal':item.status==='Sắp hết'?'gold':'pink'})"></div></div>
-              </td>
-              <td class="font-bold text-accent">${fmt(item.price)}</td>
-              <td class="text-sm">${item.expiry || '—'}</td>
-              <td><span class="adm-tag adm-tag-${sc}">${item.status}</span></td>
-              <td><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Điều chỉnh kho...','info')">📦</button></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+
+    <div>
+      <div class="adm-page-title">
+        Quản lý Kho hàng
+      </div>
+
+      <div class="adm-page-sub">
+        ${items.length} sản phẩm trong kho
+      </div>
     </div>
-  </div>`;
+
+    <div class="flex gap8">
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="admShowCategories()"
+      >
+        📂 Danh mục
+      </button>
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="admImportReceipt()"
+      >
+        📥 Nhập kho
+      </button>
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="admExportReceipt()"
+      >
+        📤 Xuất kho
+      </button>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="admAddProduct()"
+      >
+        + Thêm SP
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ALERTS -->
+
+  <div class="adm-grid adm-g4 mb16">
+
+    <div class="adm-stat">
+      <div class="adm-stat-icon">⚠️</div>
+      <div class="adm-stat-val">
+        ${alerts.low_stock}
+      </div>
+      <div class="adm-stat-label">
+        Sắp hết hàng
+      </div>
+    </div>
+
+    <div class="adm-stat">
+      <div class="adm-stat-icon">❌</div>
+      <div class="adm-stat-val">
+        ${alerts.out_stock}
+      </div>
+      <div class="adm-stat-label">
+        Hết hàng
+      </div>
+    </div>
+
+    <div class="adm-stat">
+      <div class="adm-stat-icon">⏰</div>
+      <div class="adm-stat-val">
+        ${alerts.expiring}
+      </div>
+      <div class="adm-stat-label">
+        Sắp hết hạn
+      </div>
+    </div>
+
+    <div class="adm-stat">
+      <div class="adm-stat-icon">📦</div>
+      <div class="adm-stat-val">
+        ${alerts.over_stock}
+      </div>
+      <div class="adm-stat-label">
+        Tồn quá nhiều
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FILTER -->
+
+  <div class="adm-card mb16">
+
+    <div class="flex gap8 wrap">
+
+      <input
+        id="invSearch"
+        class="adm-input"
+        placeholder="Tìm sản phẩm..."
+        value="${search}"
+        style="width:220px"
+      >
+
+      <select
+        id="invCategory"
+        class="adm-input"
+        style="width:180px"
+      >
+        <option value="">Tất cả danh mục</option>
+
+        ${categories.map(c => `
+          <option
+            value="${c.id}"
+            ${category === c.id ? 'selected' : ''}
+          >
+            ${c.name}
+          </option>
+        `).join('')}
+
+      </select>
+
+      <select
+        id="invStock"
+        class="adm-input"
+        style="width:160px"
+      >
+        <option value="">Tất cả tồn kho</option>
+
+        <option
+          value="available"
+          ${stock === 'available' ? 'selected' : ''}
+        >
+          Còn hàng
+        </option>
+
+        <option
+          value="low"
+          ${stock === 'low' ? 'selected' : ''}
+        >
+          Sắp hết
+        </option>
+
+        <option
+          value="out"
+          ${stock === 'out' ? 'selected' : ''}
+        >
+          Hết hàng
+        </option>
+
+      </select>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="searchInventory()"
+      >
+        🔍 Lọc
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- TABLE -->
+
+  <div class="adm-card" style="padding:0">
+
+    <div class="adm-table-wrap">
+
+      <table class="adm-table">
+
+        <thead>
+
+          <tr>
+
+            <th>SP</th>
+
+            <th>Danh mục</th>
+
+            <th>Giá bán</th>
+
+            <th>Tồn kho</th>
+
+            <th>Barcode</th>
+
+            <th>Trạng thái</th>
+
+            <th>Thao tác</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${items.map(i => `
+
+          <tr>
+
+            <td>
+
+              <div class="fxc gap12">
+
+                <img
+                  src="${i.image || '/static/img/no-image.png'}"
+                  style="
+                    width:52px;
+                    height:52px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    border:1px solid #eee
+                  "
+                >
+
+                <div>
+
+                  <div class="font-bold">
+                    ${i.name}
+                  </div>
+
+                  <div class="text-sm text-muted">
+                    ${i.id}
+                  </div>
+
+                </div>
+
+              </div>
+
+            </td>
+
+            <td>
+              ${i.category_name || '-'}
+            </td>
+
+            <td class="font-bold text-accent">
+              ${fmt(i.sell_price)}
+            </td>
+
+            <td>
+
+              <div class="
+                ${i.quantity < i.min_qty ? 'text-danger font-bold' : ''}
+              ">
+                ${i.quantity} ${i.unit || ''}
+              </div>
+
+            </td>
+
+            <td>
+              ${i.barcode || '-'}
+            </td>
+
+            <td>
+
+              <span class="
+                adm-tag
+                ${i.status === 'OK'
+                  ? 'adm-tag-green'
+                  : 'adm-tag-red'}
+              ">
+                ${i.status}
+              </span>
+
+            </td>
+
+            <td>
+
+              <div class="flex gap6">
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="viewProduct('${i.id}')"
+                >
+                  👁
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="editProduct('${i.id}')"
+                >
+                  ✏️
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-danger adm-btn-sm"
+                  onclick="deleteProduct('${i.id}')"
+                >
+                  🗑
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          `).join('')}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+  <!-- CATEGORY -->
+
+  <div class="adm-card mt16">
+
+    <div class="adm-card-title">
+      📂 Danh mục sản phẩm
+    </div>
+
+    <div class="adm-grid adm-g4">
+
+      ${categories.map(c => `
+
+      <div
+        style="
+          background:var(--cream);
+          padding:16px;
+          border-radius:14px;
+        "
+      >
+
+        <div class="font-bold mb8">
+          ${c.name}
+        </div>
+
+        <div class="text-muted text-sm">
+          ${c.products_count} sản phẩm
+        </div>
+
+      </div>
+
+      `).join('')}
+
+    </div>
+
+  </div>
+
+  `;
+}
+
+function searchInventory() {
+
+  admInventory(
+
+    document.getElementById('invSearch').value,
+
+    document.getElementById('invCategory').value,
+
+    '',
+
+    document.getElementById('invStock').value
+  );
+}
+
+async function viewProduct(id) {
+
+  const p = await api(`/api/inventory/${id}`);
+
+  document.getElementById('admModalTitle').textContent =
+    `📦 ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-grid adm-g2">
+
+      <div>
+
+        <img
+          src="${p.image || '/static/img/no-image.png'}"
+          style="
+            width:100%;
+            border-radius:16px;
+            border:1px solid #eee;
+          "
+        >
+
+      </div>
+
+      <div>
+
+        <div class="mb12">
+
+          <div class="text-muted text-sm">
+            Mã SP
+          </div>
+
+          <div class="font-bold">
+            ${p.id}
+          </div>
+
+        </div>
+
+        <div class="mb12">
+
+          <div class="text-muted text-sm">
+            Danh mục
+          </div>
+
+          <div class="font-bold">
+            ${p.category_name || '-'}
+          </div>
+
+        </div>
+
+        <div class="mb12">
+
+          <div class="text-muted text-sm">
+            Giá bán
+          </div>
+
+          <div class="font-bold text-accent">
+            ${fmt(p.sell_price)}
+          </div>
+
+        </div>
+
+        <div class="mb12">
+
+          <div class="text-muted text-sm">
+            Tồn kho
+          </div>
+
+          <div class="font-bold">
+            ${p.quantity}
+          </div>
+
+        </div>
+
+        <div class="mb12">
+
+          <div class="text-muted text-sm">
+            Barcode
+          </div>
+
+          <div class="font-bold">
+            ${p.barcode || '-'}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="mt16">
+
+      <div class="text-muted text-sm mb8">
+        Mô tả
+      </div>
+
+      <div>
+        ${p.description || 'Không có mô tả'}
+      </div>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Đóng
+    </button>
+
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function admAddProduct() {
+
+  const categories = await api('/api/categories');
+
+  document.getElementById('admModalTitle').textContent =
+    '➕ Thêm sản phẩm';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">
+          Tên SP
+        </label>
+
+        <input
+          id="pName"
+          class="adm-input"
+        >
+      </div>
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Danh mục
+        </label>
+
+        <select
+          id="pCategory"
+          class="adm-input"
+        >
+
+          ${categories.map(c => `
+            <option value="${c.id}">
+              ${c.name}
+            </option>
+          `).join('')}
+
+        </select>
+
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">
+          Giá nhập
+        </label>
+
+        <input
+          id="pImport"
+          type="number"
+          class="adm-input"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">
+          Giá bán
+        </label>
+
+        <input
+          id="pSell"
+          type="number"
+          class="adm-input"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">
+          Số lượng
+        </label>
+
+        <input
+          id="pQty"
+          type="number"
+          class="adm-input"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">
+          Đơn vị
+        </label>
+
+        <input
+          id="pUnit"
+          class="adm-input"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Hình ảnh
+      </label>
+
+      <input
+        id="pImage"
+        class="adm-input"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Barcode
+      </label>
+
+      <input
+        id="pBarcode"
+        class="adm-input"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Mô tả
+      </label>
+
+      <textarea
+        id="pDesc"
+        class="adm-input"
+        rows="4"
+      ></textarea>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="saveProduct()"
+    >
+      💾 Lưu SP
+    </button>
+
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function saveProduct() {
+
+  const payload = {
+
+    name: document.getElementById('pName').value,
+
+    category_id:
+      document.getElementById('pCategory').value,
+
+    import_price:
+      document.getElementById('pImport').value,
+
+    sell_price:
+      document.getElementById('pSell').value,
+
+    quantity:
+      document.getElementById('pQty').value,
+
+    unit:
+      document.getElementById('pUnit').value,
+
+    image:
+      document.getElementById('pImage').value,
+
+    barcode:
+      document.getElementById('pBarcode').value,
+
+    description:
+      document.getElementById('pDesc').value,
+  };
+
+  const d = await api('/api/inventory', {
+
+    method: 'POST',
+
+    body: JSON.stringify(payload)
+  });
+
+  toast(d.message, 'success');
+
+  admCloseModal();
+
+  admRender();
+}
+
+async function editProduct(id) {
+
+  const p = await api(`/api/inventory/${id}`);
+  const categories = await api('/api/categories');
+
+  document.getElementById('admModalTitle').textContent =
+    `✏️ Chỉnh sửa ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Tên SP</label>
+
+        <input
+          id="ePName"
+          class="adm-input"
+          value="${p.name}"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Danh mục</label>
+
+        <select
+          id="ePCategory"
+          class="adm-input"
+        >
+
+          ${categories.map(c => `
+            <option
+              value="${c.id}"
+              ${p.category_id === c.id ? 'selected' : ''}
+            >
+              ${c.name}
+            </option>
+          `).join('')}
+
+        </select>
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Thương hiệu</label>
+
+        <input
+          id="ePBrand"
+          class="adm-input"
+          value="${p.brand || ''}"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Nhà cung cấp</label>
+
+        <input
+          id="ePSupplier"
+          class="adm-input"
+          value="${p.supplier || ''}"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Giá nhập</label>
+
+        <input
+          id="ePImport"
+          type="number"
+          class="adm-input"
+          value="${p.import_price}"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Giá bán</label>
+
+        <input
+          id="ePSell"
+          type="number"
+          class="adm-input"
+          value="${p.sell_price}"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Số lượng</label>
+
+        <input
+          id="ePQty"
+          type="number"
+          class="adm-input"
+          value="${p.quantity}"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">SL tối thiểu</label>
+
+        <input
+          id="ePMinQty"
+          type="number"
+          class="adm-input"
+          value="${p.min_qty}"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Đơn vị</label>
+
+        <input
+          id="ePUnit"
+          class="adm-input"
+          value="${p.unit || ''}"
+        >
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Hạn sử dụng</label>
+
+        <input
+          id="ePExpiry"
+          type="date"
+          class="adm-input"
+          value="${p.expiry || ''}"
+        >
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Barcode</label>
+
+      <input
+        id="ePBarcode"
+        class="adm-input"
+        value="${p.barcode || ''}"
+      >
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Hình ảnh</label>
+
+      <input
+        id="ePImage"
+        class="adm-input"
+        value="${p.image || ''}"
+      >
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Mô tả</label>
+
+      <textarea
+        id="ePDesc"
+        class="adm-input"
+        rows="4"
+      >${p.description || ''}</textarea>
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="updateProduct('${p.id}')"
+    >
+      💾 Lưu thay đổi
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function updateProduct(id) {
+
+  const payload = {
+
+    name:
+      document.getElementById('ePName').value,
+
+    category_id:
+      document.getElementById('ePCategory').value,
+
+    brand:
+      document.getElementById('ePBrand').value,
+
+    supplier:
+      document.getElementById('ePSupplier').value,
+
+    import_price:
+      document.getElementById('ePImport').value,
+
+    sell_price:
+      document.getElementById('ePSell').value,
+
+    quantity:
+      document.getElementById('ePQty').value,
+
+    min_qty:
+      document.getElementById('ePMinQty').value,
+
+    unit:
+      document.getElementById('ePUnit').value,
+
+    expiry:
+      document.getElementById('ePExpiry').value,
+
+    barcode:
+      document.getElementById('ePBarcode').value,
+
+    image:
+      document.getElementById('ePImage').value,
+
+    description:
+      document.getElementById('ePDesc').value,
+  };
+
+  const d = await api(`/api/inventory/${id}`, {
+
+    method: 'PUT',
+
+    body: JSON.stringify(payload)
+  });
+
+  toast(d.message, 'success');
+
+  admCloseModal();
+
+  admRender();
+}
+
+async function deleteProduct(id) {
+
+  if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+    return;
+  }
+
+  const d = await api(`/api/inventory/${id}`, {
+
+    method: 'DELETE'
+  });
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+async function admShowCategories() {
+
+  const categories = await api('/api/categories');
+
+  document.getElementById('admModalTitle').textContent =
+    '📂 Quản lý danh mục';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="mb16">
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="showAddCategoryForm()"
+      >
+        + Thêm danh mục
+      </button>
+
+    </div>
+
+    <div class="adm-table-wrap">
+
+      <table class="adm-table">
+
+        <thead>
+
+          <tr>
+            <th>Mã</th>
+            <th>Tên danh mục</th>
+            <th>Số SP</th>
+            <th>Thao tác</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${categories.map(c => `
+
+          <tr>
+
+            <td>${c.id}</td>
+
+            <td class="font-bold">
+              ${c.name}
+            </td>
+
+            <td>${c.products_count}</td>
+
+            <td>
+
+              <div class="flex gap6">
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="editCategory('${c.id}')"
+                >
+                  ✏️
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-danger adm-btn-sm"
+                  onclick="deleteCategory('${c.id}')"
+                >
+                  🗑
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          `).join('')}
+
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Đóng
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function admImportReceipt() {
+
+  const items = await api('/api/inventory');
+
+  document.getElementById('admModalTitle').textContent =
+    '📥 Tạo phiếu nhập kho';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Nhà cung cấp
+        </label>
+
+        <input
+          id="impSupplier"
+          class="adm-input"
+        >
+
+      </div>
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Người nhập
+        </label>
+
+        <input
+          id="impUser"
+          class="adm-input"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Chọn sản phẩm
+      </label>
+
+      <select
+        id="impProduct"
+        class="adm-input"
+      >
+
+        ${items.map(i => `
+          <option value="${i.id}">
+            ${i.name}
+          </option>
+        `).join('')}
+
+      </select>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Số lượng
+        </label>
+
+        <input
+          id="impQty"
+          type="number"
+          class="adm-input"
+        >
+
+      </div>
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Giá nhập
+        </label>
+
+        <input
+          id="impPrice"
+          type="number"
+          class="adm-input"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Ghi chú
+      </label>
+
+      <textarea
+        id="impNote"
+        class="adm-input"
+      ></textarea>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="saveImportReceipt()"
+    >
+      💾 Nhập kho
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function admExportReceipt() {
+
+  const items = await api('/api/inventory');
+
+  document.getElementById('admModalTitle').textContent =
+    '📤 Tạo phiếu xuất kho';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Loại xuất
+      </label>
+
+      <select
+        id="expType"
+        class="adm-input"
+      >
+
+        <option value="sale">
+          Xuất bán
+        </option>
+
+        <option value="broken">
+          Xuất hỏng
+        </option>
+
+        <option value="service">
+          Xuất dịch vụ
+        </option>
+
+        <option value="internal">
+          Xuất nội bộ
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Sản phẩm
+      </label>
+
+      <select
+        id="expProduct"
+        class="adm-input"
+      >
+
+        ${items.map(i => `
+          <option value="${i.id}">
+            ${i.name}
+          </option>
+        `).join('')}
+
+      </select>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Số lượng
+      </label>
+
+      <input
+        id="expQty"
+        type="number"
+        class="adm-input"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Ghi chú
+      </label>
+
+      <textarea
+        id="expNote"
+        class="adm-input"
+      ></textarea>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="saveExportReceipt()"
+    >
+      💾 Xuất kho
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function saveImportReceipt() {
+
+  toast('Đã tạo phiếu nhập!', 'success');
+
+  admCloseModal();
+
+  admRender();
+}
+
+async function saveExportReceipt() {
+
+  toast('Đã tạo phiếu xuất!', 'success');
+
+  admCloseModal();
+
+  admRender();
 }
 
 // APPOINTMENTS 
@@ -906,7 +2207,31 @@ function admShowModal(type) {
     },
     addCustomer: {
       title: '👥 Thêm khách hàng',
-      body: `<div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Họ tên</label><input class="adm-input" id="mCusName" placeholder="Nguyễn Văn A"></div><div class="adm-form-group"><label class="adm-label">SĐT</label><input class="adm-input" id="mCusPhone" placeholder="09xx"></div></div><div class="adm-form-group"><label class="adm-label">Email</label><input class="adm-input" id="mCusEmail" placeholder="email@..."></div>`,
+      body: `
+      <div class="adm-form-row">
+
+        <div class="adm-form-group">
+          <label class="adm-label">Họ tên</label>
+          <input class="adm-input" id="mCusName">
+        </div>
+
+        <div class="adm-form-group">
+          <label class="adm-label">SĐT</label>
+          <input class="adm-input" id="mCusPhone">
+        </div>
+
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Email</label>
+        <input class="adm-input" id="mCusEmail">
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Địa chỉ</label>
+        <textarea class="adm-input" id="mCusAddress"></textarea>
+      </div>
+      `,
       foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button><button class="adm-btn adm-btn-primary" onclick="saveCustomer()">💾 Lưu</button>`,
     },
     addAppointment: {
@@ -928,6 +2253,68 @@ function admShowModal(type) {
       title: '🎁 Tạo khuyến mãi',
       body: `<div class="adm-form-group"><label class="adm-label">Tên chương trình</label><input class="adm-input" id="mPromoName" placeholder="Mừng Tết..."></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Loại</label><select class="adm-select" id="mPromoType"><option>Giảm giá %</option><option>Combo</option></select></div><div class="adm-form-group"><label class="adm-label">Mức giảm (%)</label><input class="adm-input" type="number" id="mPromoVal" placeholder="20"></div></div><div class="adm-form-group"><label class="adm-label">Mã giảm giá</label><input class="adm-input" id="mPromoCode" placeholder="TET2025"></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Ngày bắt đầu</label><input class="adm-input" type="date" id="mPromoFrom"></div><div class="adm-form-group"><label class="adm-label">Ngày kết thúc</label><input class="adm-input" type="date" id="mPromoTo"></div></div>`,
       foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button><button class="adm-btn adm-btn-primary" onclick="savePromotion()">🎁 Tạo</button>`,
+    },
+    addReminder: {
+
+      title: '💉 Tạo lịch tiêm phòng',
+
+      body: `
+
+        <div class="adm-form-group">
+          <label class="adm-label">Pet ID</label>
+          <input class="adm-input" id="mRemPet">
+        </div>
+
+        <div class="adm-form-group">
+          <label class="adm-label">Loại nhắc</label>
+
+          <select class="adm-select" id="mRemType">
+
+            <option>Tiêm vaccine</option>
+
+            <option>Tẩy giun</option>
+
+            <option>Khám định kỳ</option>
+
+          </select>
+        </div>
+
+        <div class="adm-form-group">
+          <label class="adm-label">Ngày nhắc</label>
+
+          <input
+            class="adm-input"
+            type="date"
+            id="mRemDate"
+          >
+        </div>
+
+        <div class="adm-form-group">
+          <label class="adm-label">Ghi chú</label>
+
+          <textarea
+            class="adm-input"
+            id="mRemNote"
+          ></textarea>
+        </div>
+      `,
+
+      foot: `
+
+        <button
+          class="adm-btn adm-btn-sec"
+          onclick="admCloseModal()"
+        >
+          Hủy
+        </button>
+
+        <button
+          class="adm-btn adm-btn-primary"
+          onclick="saveReminder()"
+        >
+          💾 Lưu
+        </button>
+      `
     },
   };
   const c = cfg[type];
@@ -982,7 +2369,7 @@ async function savePromotion() {
   admRender();
 }
 
-// ───────────────── BOOKINGS ─────────────────
+// BOOKINGS
 
 let currentAction = null;
 let currentBookingId = null;
@@ -1379,3 +2766,499 @@ function showToast(message, type = 'info') {
         toast.remove();
     }, 3000);
 }
+
+async function saveCustomer() {
+
+  const payload = {
+
+    name: document.getElementById('mCusName').value,
+
+    phone: document.getElementById('mCusPhone').value,
+
+    email: document.getElementById('mCusEmail').value,
+
+    address: document.getElementById('mCusAddress').value,
+  };
+
+  const d = await api('/api/customers', {
+
+    method: 'POST',
+
+    body: JSON.stringify(payload)
+  });
+
+  admCloseModal();
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+async function viewMedical(petId) {
+
+  const records = await api(
+    `/api/medical-records/${petId}`
+  );
+
+  document.getElementById('admModalTitle').textContent =
+    '🏥 Hồ sơ y tế';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="flex mb16">
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="addMedical('${petId}')"
+      >
+        + Thêm hồ sơ
+      </button>
+    </div>
+
+    ${records.map(r => `
+
+      <div class="adm-card mb12">
+
+        <div class="fxb">
+
+          <strong>${r.visit_date}</strong>
+
+          <span class="adm-tag adm-tag-red">
+            ${r.condition}
+          </span>
+
+        </div>
+
+        <div class="mt8">
+          <strong>Chuẩn đoán:</strong>
+          ${r.diagnosis}
+        </div>
+
+        <div class="mt8">
+          <strong>Bác sĩ:</strong>
+          ${r.doctor}
+        </div>
+
+        <div class="mt8">
+          <strong>Thuốc:</strong>
+          ${r.medicine}
+        </div>
+
+        <div class="mt8">
+          <strong>Vaccine:</strong>
+          ${r.vaccine}
+        </div>
+
+      </div>
+
+    `).join('')}
+  `;
+
+  document.getElementById('admModalFoot').innerHTML =
+    `<button class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()">
+      Đóng
+    </button>`;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+function addMedical(petId) {
+
+  document.getElementById('admModalTitle')
+    .textContent = '➕ Hồ sơ y tế';
+
+  document.getElementById('admModalBody')
+    .innerHTML = `
+
+    <div class="adm-form-group">
+      <label class="adm-label">Ngày khám</label>
+      <input class="adm-input"
+        type="date"
+        id="mVisitDate">
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Chuẩn đoán</label>
+      <textarea class="adm-input"
+        id="mDiagnosis"></textarea>
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Bác sĩ</label>
+      <input class="adm-input"
+        id="mDoctor">
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Thuốc</label>
+      <textarea class="adm-input"
+        id="mMedicine"></textarea>
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot')
+    .innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="saveMedical('${petId}')"
+    >
+      💾 Lưu
+    </button>
+  `;
+}
+
+async function saveMedical(petId) {
+
+  const payload = {
+
+    pet_id: petId,
+
+    visit_date:
+      document.getElementById('mVisitDate').value,
+
+    diagnosis:
+      document.getElementById('mDiagnosis').value,
+
+    doctor:
+      document.getElementById('mDoctor').value,
+
+    medicine:
+      document.getElementById('mMedicine').value,
+
+    condition: 'Đang điều trị',
+  };
+
+  const d = await api(
+    '/api/medical-records',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }
+  );
+
+  toast(d.message, 'success');
+
+  admCloseModal();
+}
+
+// REMINDERS / VACCINE
+async function admReminders() {
+
+  const reminders = await api('/api/reminders');
+
+  document.getElementById('admContent').innerHTML = `
+
+    <div class="adm-page-header">
+
+      <div>
+        <div class="adm-page-title">
+          💉 Lịch tiêm phòng
+        </div>
+
+        <div class="adm-page-sub">
+          ${reminders.length} lịch nhắc
+        </div>
+      </div>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="admShowModal('addReminder')"
+      >
+        + Tạo nhắc lịch
+      </button>
+
+    </div>
+
+    <div class="adm-card" style="padding:0">
+
+      <div class="adm-table-wrap">
+
+        <table class="adm-table">
+
+          <thead>
+            <tr>
+              <th>Pet ID</th>
+              <th>Loại nhắc</th>
+              <th>Ngày nhắc</th>
+              <th>Ghi chú</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            ${reminders.map(r => `
+
+              <tr>
+
+                <td>
+                  <strong>${r.pet_id}</strong>
+                </td>
+
+                <td>
+                  <span class="adm-tag adm-tag-blue">
+                    ${r.reminder_type}
+                  </span>
+                </td>
+
+                <td>${r.reminder_date}</td>
+
+                <td>${r.note || '-'}</td>
+
+                <td>
+
+                  <span class="adm-tag adm-tag-green">
+                    Đang hoạt động
+                  </span>
+
+                </td>
+
+              </tr>
+
+            `).join('')}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+  `;
+}
+
+// SERVICE HISTORY
+async function admServices() {
+
+  const petId = prompt(
+    'Nhập ID thú cưng để xem lịch sử dịch vụ'
+  );
+
+  if (!petId) return;
+
+  const services = await api(
+    `/api/service-history/${petId}`
+  );
+
+  document.getElementById('admContent').innerHTML = `
+
+    <div class="adm-page-header">
+
+      <div>
+        <div class="adm-page-title">
+          🛁 Dịch vụ đã sử dụng
+        </div>
+
+        <div class="adm-page-sub">
+          ${services.length} dịch vụ
+        </div>
+      </div>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="addService('${petId}')"
+      >
+        + Thêm dịch vụ
+      </button>
+
+    </div>
+
+    <div class="adm-grid adm-g3">
+
+      ${services.map(s => `
+
+        <div class="adm-card">
+
+          <div class="fxb mb12">
+
+            <strong>${s.service_name}</strong>
+
+            <span class="adm-tag adm-tag-purple">
+              ${s.status}
+            </span>
+
+          </div>
+
+          <div class="text-sm mb8">
+            📅 ${s.service_date}
+          </div>
+
+          <div class="text-sm mb8">
+            💰 ${fmt(s.price)}
+          </div>
+
+          <div class="text-sm">
+            📝 ${s.note || '-'}
+          </div>
+
+        </div>
+
+      `).join('')}
+
+    </div>
+  `;
+}
+
+async function saveReminder() {
+
+  const payload = {
+
+    pet_id:
+      document.getElementById('mRemPet').value,
+
+    reminder_type:
+      document.getElementById('mRemType').value,
+
+    reminder_date:
+      document.getElementById('mRemDate').value,
+
+    note:
+      document.getElementById('mRemNote').value,
+  };
+
+  const d = await api(
+    '/api/reminders',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }
+  );
+
+  toast(d.message, 'success');
+
+  admCloseModal();
+
+  admRender();
+}
+
+function addService(petId) {
+
+  document.getElementById('admModalTitle')
+    .textContent = '🛁 Thêm dịch vụ';
+
+  document.getElementById('admModalBody')
+    .innerHTML = `
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Tên dịch vụ
+      </label>
+
+      <input
+        class="adm-input"
+        id="mServiceName"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Ngày sử dụng
+      </label>
+
+      <input
+        type="date"
+        class="adm-input"
+        id="mServiceDate"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Giá
+      </label>
+
+      <input
+        type="number"
+        class="adm-input"
+        id="mServicePrice"
+      >
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Ghi chú
+      </label>
+
+      <textarea
+        class="adm-input"
+        id="mServiceNote"
+      ></textarea>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot')
+    .innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="saveService('${petId}')"
+    >
+      💾 Lưu
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function saveService(petId) {
+
+  const payload = {
+
+    pet_id: petId,
+
+    service_name:
+      document.getElementById('mServiceName').value,
+
+    service_date:
+      document.getElementById('mServiceDate').value,
+
+    status: 'Hoàn thành',
+
+    price:
+      document.getElementById('mServicePrice').value,
+
+    note:
+      document.getElementById('mServiceNote').value,
+  };
+
+  const d = await api(
+    '/api/service-history',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }
+  );
+
+  toast(d.message, 'success');
+
+  admCloseModal();
+
+  admRender();
+}
+
