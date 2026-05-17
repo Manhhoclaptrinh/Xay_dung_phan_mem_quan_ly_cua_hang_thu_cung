@@ -415,3 +415,1281 @@ img{max-width:100%}
   .adm-pos-wrap{grid-template-columns:1fr}
   .adm-g4{grid-template-columns:repeat(2,1fr)}
 }
+
+.transport-section{
+  background:
+  radial-gradient(circle at top left,#dcfce7,transparent 40%),
+  radial-gradient(circle at bottom right,#dbeafe,transparent 40%);
+}
+
+/* HERO */
+
+.transport-hero{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:40px;
+  align-items:center;
+  margin-bottom:50px;
+}
+
+.transport-live-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  padding:12px 18px;
+  border-radius:999px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  font-weight:700;
+}
+
+.live-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#22c55e;
+  animation:pulse 1.5s infinite;
+}
+
+.transport-main-title{
+  font-size:4rem;
+  line-height:1.1;
+  margin:24px 0;
+  font-weight:900;
+}
+
+.transport-main-title span{
+  display:block;
+  color:#16a34a;
+}
+
+.transport-main-sub{
+  font-size:1.1rem;
+  line-height:1.7;
+  color:#555;
+  max-width:600px;
+}
+
+.transport-stats{
+  display:flex;
+  gap:18px;
+  margin-top:30px;
+}
+
+.transport-stat{
+  background:#fff;
+  padding:20px;
+  border-radius:24px;
+  min-width:120px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.transport-stat-num{
+  font-size:1.8rem;
+  font-weight:900;
+}
+
+.transport-stat-label{
+  color:#777;
+}
+
+/* PHONE */
+
+.transport-phone{
+  width:320px;
+  margin:auto;
+  background:#111827;
+  border-radius:40px;
+  padding:18px;
+  color:#fff;
+  box-shadow:0 40px 80px rgba(0,0,0,.25);
+}
+
+.phone-top{
+  text-align:center;
+  margin-bottom:18px;
+  font-weight:700;
+}
+
+.phone-map{
+  height:350px;
+  border-radius:30px;
+  background:#1f2937;
+  position:relative;
+  overflow:hidden;
+}
+
+.map-road{
+  position:absolute;
+  width:80%;
+  height:8px;
+  background:#22c55e;
+  top:50%;
+  left:10%;
+  border-radius:999px;
+}
+
+.phone-car{
+  position:absolute;
+  left:45%;
+  top:43%;
+  font-size:2rem;
+  animation:carMove 3s infinite alternate ease-in-out;
+}
+
+.map-location{
+  position:absolute;
+  font-size:2rem;
+}
+
+.pickup{
+  left:10%;
+  top:42%;
+}
+
+.dropoff{
+  right:10%;
+  top:42%;
+}
+
+.phone-driver{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-top:18px;
+}
+
+.phone-driver-avatar{
+  width:55px;
+  height:55px;
+  border-radius:50%;
+  background:#22c55e;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.phone-driver-name{
+  font-weight:800;
+}
+
+.phone-driver-status{
+  color:#d1d5db;
+  font-size:.9rem;
+}
+
+/* LIVE BAR */
+
+.transport-live-bar{
+  display:flex;
+  gap:18px;
+  overflow:auto;
+  margin-bottom:30px;
+}
+
+.live-step{
+  background:#fff;
+  padding:14px 22px;
+  border-radius:999px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.live-step.active{
+  background:#22c55e;
+  color:#fff;
+}
+
+/* MAIN GRID */
+
+.transport-main-grid{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:24px;
+}
+
+.transport-left,
+.transport-right{
+  display:flex;
+  flex-direction:column;
+  gap:24px;
+}
+
+.transport-card,
+.transport-booking-card{
+  background:rgba(255,255,255,.75);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.5);
+  border-radius:32px;
+  padding:24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.08);
+}
+
+.card-title{
+  font-size:1.2rem;
+  font-weight:900;
+}
+
+.card-sub{
+  color:#777;
+  margin-top:4px;
+}
+
+.card-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.tracking-status{
+  background:#dcfce7;
+  color:#166534;
+  padding:10px 18px;
+  border-radius:999px;
+  font-weight:800;
+}
+
+/* MAP */
+
+.big-map{
+  height:400px;
+  border-radius:28px;
+  position:relative;
+  overflow:hidden;
+  background:#dbeafe;
+}
+
+.map-bg{
+  position:absolute;
+  inset:0;
+  background:
+  linear-gradient(90deg,rgba(255,255,255,.3) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.3) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+.route-line{
+  position:absolute;
+  left:15%;
+  top:50%;
+  width:70%;
+  height:8px;
+  background:#22c55e;
+  border-radius:999px;
+}
+
+.route-pickup,
+.route-dropoff,
+.route-car{
+  position:absolute;
+  font-size:2.5rem;
+}
+
+.route-pickup{
+  left:10%;
+  top:43%;
+}
+
+.route-dropoff{
+  right:10%;
+  top:43%;
+}
+
+.route-car{
+  left:48%;
+  top:41%;
+  animation:carMove 3s infinite alternate ease-in-out;
+}
+
+@keyframes carMove{
+  from{
+    transform:translateX(-30px);
+  }
+  to{
+    transform:translateX(30px);
+  }
+}
+
+@keyframes pulse{
+  0%{
+    transform:scale(1);
+    opacity:1;
+  }
+  100%{
+    transform:scale(1.8);
+    opacity:.2;
+  }
+}
+
+/* TRACKING */
+
+.tracking-info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:20px;
+}
+
+.tracking-box{
+  background:#fff;
+  border-radius:20px;
+  padding:18px;
+}
+
+.tracking-label{
+  color:#777;
+  margin-bottom:8px;
+}
+
+.tracking-value{
+  font-size:1.2rem;
+  font-weight:900;
+}
+
+.success{
+  color:#16a34a;
+}
+
+/* DRIVER */
+
+.driver-header{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.driver-big-avatar{
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:#22c55e;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+}
+
+.driver-big-name{
+  font-size:1.2rem;
+  font-weight:900;
+}
+
+.driver-big-rate{
+  color:#666;
+}
+
+.driver-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:20px;
+}
+
+.driver-box{
+  background:#fff;
+  padding:18px;
+  border-radius:18px;
+  font-weight:700;
+}
+
+/* TIMELINE */
+
+.timeline{
+  margin-top:24px;
+  display:flex;
+  flex-direction:column;
+  gap:24px;
+}
+
+.timeline-item{
+  display:flex;
+  gap:16px;
+  position:relative;
+}
+
+.timeline-dot{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#d1d5db;
+  margin-top:4px;
+}
+
+.timeline-item.done .timeline-dot{
+  background:#22c55e;
+}
+
+.timeline-item.active .timeline-dot{
+  background:#3b82f6;
+  animation:pulse 1.5s infinite;
+}
+
+.timeline-title{
+  font-weight:800;
+}
+
+.timeline-time{
+  color:#777;
+  margin-top:4px;
+}
+
+/* CAMERA */
+
+.camera-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.camera-live{
+  background:#ef4444;
+  color:#fff;
+  padding:8px 16px;
+  border-radius:999px;
+  font-weight:800;
+}
+
+.camera-frame{
+  margin-top:20px;
+}
+
+.fake-camera{
+  height:300px;
+  border-radius:24px;
+  background:#111827;
+  position:relative;
+  overflow:hidden;
+}
+
+.camera-pet{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:6rem;
+}
+
+.camera-overlay{
+  position:absolute;
+  left:20px;
+  bottom:20px;
+  color:#fff;
+  font-weight:700;
+}
+
+/* BOOKING */
+
+.booking-card-title{
+  font-size:1.5rem;
+  font-weight:900;
+  margin-bottom:24px;
+}
+
+.booking-steps{
+  display:flex;
+  align-items:center;
+  margin-bottom:30px;
+}
+
+.booking-step{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#e5e7eb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+
+.booking-step.active{
+  background:#22c55e;
+  color:#fff;
+}
+
+.booking-line{
+  flex:1;
+  height:4px;
+  background:#e5e7eb;
+}
+
+/* VEHICLE */
+
+.vehicle-title{
+  font-size:1rem;
+  font-weight:900;
+  margin:24px 0 16px;
+}
+
+.vehicle-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:14px;
+}
+
+.vehicle-card{
+  background:#fff;
+  border-radius:20px;
+  padding:20px;
+  text-align:center;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.vehicle-card:hover{
+  transform:translateY(-5px);
+}
+
+.vehicle-card.active{
+  background:#22c55e;
+  color:#fff;
+}
+
+.vehicle-icon{
+  font-size:2rem;
+}
+
+.vehicle-name{
+  margin-top:10px;
+  font-weight:800;
+}
+
+.vehicle-price{
+  margin-top:8px;
+}
+
+/* FEATURES */
+
+.feature-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:24px;
+}
+
+.feature-box{
+  background:#fff;
+  border-radius:18px;
+  padding:16px;
+  text-align:center;
+  font-weight:700;
+}
+
+.feature-box.active{
+  background:#dcfce7;
+  color:#166534;
+}
+
+/* PAYMENT */
+
+.payment-title{
+  margin-top:24px;
+  font-size:1rem;
+  font-weight:900;
+}
+
+.payment-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:16px;
+}
+
+.payment-card{
+  background:#fff;
+  border-radius:18px;
+  padding:16px;
+  text-align:center;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.payment-card.active{
+  background:#22c55e;
+  color:#fff;
+}
+
+/* TOTAL */
+
+.booking-total{
+  margin-top:30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-top:24px;
+  border-top:1px solid rgba(0,0,0,.08);
+}
+
+.total-label{
+  color:#777;
+}
+
+.total-price{
+  font-size:2rem;
+  font-weight:900;
+  color:#16a34a;
+}
+
+.btn-book-transport{
+  background:#16a34a;
+  color:#fff;
+  border:none;
+  padding:18px 28px;
+  border-radius:20px;
+  font-weight:900;
+  cursor:pointer;
+  font-size:1rem;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1100px){
+
+  .transport-hero,
+  .transport-main-grid{
+    grid-template-columns:1fr;
+  }
+
+  .transport-main-title{
+    font-size:2.8rem;
+  }
+
+  .vehicle-grid{
+    grid-template-columns:1fr;
+  }
+
+}
+
+.transport-layout{
+  display:grid;
+  grid-template-columns:1.2fr .8fr;
+  gap:24px;
+}
+
+/* MAP */
+
+.transport-map-wrap{
+  background:#fff;
+  border-radius:32px;
+  overflow:hidden;
+  box-shadow:0 15px 40px rgba(0,0,0,.08);
+}
+
+.transport-map{
+  height:650px;
+  background:#dbeafe;
+  position:relative;
+  overflow:hidden;
+}
+
+.map-grid{
+  position:absolute;
+  inset:0;
+
+  background:
+  linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px);
+
+  background-size:40px 40px;
+}
+
+.map-route{
+  position:absolute;
+  left:15%;
+  top:50%;
+  width:70%;
+  height:10px;
+  border-radius:999px;
+  background:#22c55e;
+}
+
+.map-pin{
+  position:absolute;
+  font-size:2.5rem;
+}
+
+.pickup{
+  left:10%;
+  top:43%;
+}
+
+.dropoff{
+  right:10%;
+  top:43%;
+}
+
+.map-car{
+  position:absolute;
+  left:48%;
+  top:42%;
+  font-size:3rem;
+  animation:moveCar 3s infinite alternate ease-in-out;
+}
+
+@keyframes moveCar{
+
+  from{
+    transform:translateX(-30px);
+  }
+
+  to{
+    transform:translateX(30px);
+  }
+
+}
+
+.transport-map-info{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:16px;
+  padding:24px;
+}
+
+.map-info-box{
+  background:#f9fafb;
+  border-radius:20px;
+  padding:20px;
+}
+
+.map-info-label{
+  color:#777;
+  margin-bottom:8px;
+}
+
+.map-info-value{
+  font-size:1.2rem;
+  font-weight:900;
+}
+
+/* PANEL */
+
+.transport-panel{
+  background:#fff;
+  border-radius:32px;
+  padding:28px;
+  box-shadow:0 15px 40px rgba(0,0,0,.08);
+
+  position:sticky;
+  top:100px;
+
+  height:fit-content;
+}
+
+.transport-panel-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.transport-title{
+  font-size:1.5rem;
+  font-weight:900;
+}
+
+.transport-live{
+  background:#dcfce7;
+  color:#166534;
+  padding:10px 16px;
+  border-radius:999px;
+  font-weight:800;
+}
+
+.transport-input-group{
+  margin-bottom:18px;
+}
+
+.transport-label{
+  display:block;
+  margin-bottom:10px;
+  font-weight:700;
+}
+
+.transport-input,
+.transport-textarea{
+  width:100%;
+  border:none;
+  background:#f3f4f6;
+  border-radius:18px;
+  padding:16px;
+  font-size:1rem;
+}
+
+.transport-textarea{
+  height:100px;
+  resize:none;
+}
+
+.transport-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.transport-subtitle{
+  margin:24px 0 18px;
+  font-size:1rem;
+  font-weight:900;
+}
+
+/* VEHICLE */
+
+.vehicle-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.vehicle-item{
+  border:2px solid transparent;
+  border-radius:24px;
+  padding:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  background:#f9fafb;
+  transition:.3s;
+}
+
+.vehicle-item:hover{
+  transform:translateY(-3px);
+}
+
+.vehicle-item.active{
+  border-color:#22c55e;
+  background:#ecfdf5;
+}
+
+.vehicle-left{
+  display:flex;
+  gap:16px;
+  align-items:center;
+}
+
+.vehicle-icon{
+  width:60px;
+  height:60px;
+  border-radius:18px;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+}
+
+.vehicle-name{
+  font-weight:900;
+}
+
+.vehicle-desc{
+  color:#666;
+  margin-top:4px;
+}
+
+.vehicle-price{
+  font-weight:900;
+  font-size:1.1rem;
+}
+
+/* FEATURES */
+
+.transport-feature-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:24px;
+}
+
+.transport-feature{
+  background:#f9fafb;
+  border-radius:18px;
+  padding:16px;
+  text-align:center;
+  font-weight:700;
+}
+
+.transport-feature.active{
+  background:#dcfce7;
+  color:#166534;
+}
+
+/* PAYMENT */
+
+.payment-list{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.payment-item{
+  background:#f9fafb;
+  border-radius:18px;
+  padding:16px;
+  text-align:center;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.payment-item.active{
+  background:#22c55e;
+  color:#fff;
+}
+
+/* TOTAL */
+
+.transport-bottom{
+  margin-top:30px;
+  padding-top:24px;
+  border-top:1px solid #eee;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.transport-total-label{
+  color:#666;
+}
+
+.transport-total-price{
+  font-size:2rem;
+  font-weight:900;
+  color:#16a34a;
+}
+
+.btn-transport-book{
+  border:none;
+  background:#16a34a;
+  color:#fff;
+  padding:18px 26px;
+  border-radius:20px;
+  font-weight:900;
+  cursor:pointer;
+  font-size:1rem;
+}
+
+/* TRACKING */
+
+.tracking-layout{
+  display:grid;
+  grid-template-columns:1fr .45fr;
+  gap:24px;
+}
+
+.tracking-map-card,
+.tracking-info-card{
+  background:#fff;
+  border-radius:32px;
+  padding:24px;
+  box-shadow:0 15px 40px rgba(0,0,0,.08);
+}
+
+.tracking-map-big{
+  height:600px;
+  border-radius:28px;
+  position:relative;
+  overflow:hidden;
+  background:#dbeafe;
+}
+
+.tracking-grid{
+  position:absolute;
+  inset:0;
+
+  background:
+  linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px);
+
+  background-size:40px 40px;
+}
+
+.tracking-route{
+  position:absolute;
+  width:70%;
+  left:15%;
+  top:50%;
+  height:10px;
+  background:#22c55e;
+  border-radius:999px;
+}
+
+.tracking-car{
+  position:absolute;
+  left:48%;
+  top:44%;
+  font-size:3rem;
+  animation:moveCar 3s infinite alternate ease-in-out;
+}
+
+/* DRIVER */
+
+.driver-card{
+  display:flex;
+  gap:18px;
+  align-items:center;
+}
+
+.driver-avatar{
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:#22c55e;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+}
+
+.driver-name{
+  font-size:1.2rem;
+  font-weight:900;
+}
+
+.driver-rate{
+  color:#666;
+  margin-top:4px;
+}
+
+/* TIMELINE */
+
+.tracking-timeline{
+  margin-top:30px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.tracking-item{
+  background:#f9fafb;
+  border-radius:18px;
+  padding:18px;
+  font-weight:700;
+}
+
+.tracking-item.done{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.tracking-item.active{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+/* CAMERA */
+
+.camera-card{
+  margin-top:30px;
+}
+
+.camera-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.camera-live{
+  background:#ef4444;
+  color:#fff;
+  padding:8px 14px;
+  border-radius:999px;
+  font-weight:800;
+}
+
+.camera-screen{
+  height:260px;
+  border-radius:24px;
+  background:#111827;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:6rem;
+  color:#fff;
+}
+
+/* MOBILE */
+
+@media(max-width:1100px){
+
+  .transport-layout,
+  .tracking-layout{
+    grid-template-columns:1fr;
+  }
+
+  .transport-panel{
+    position:static;
+  }
+
+  .transport-map{
+    height:400px;
+  }
+
+  .tracking-map-big{
+    height:400px;
+  }
+
+}
+.tracking-actions{
+  display:flex;
+  justify-content:center;
+  margin-top:24px;
+}
+
+.btn-new-booking{
+
+  border:none;
+
+  background:linear-gradient(
+    135deg,
+    #7c3aed,
+    #2563eb
+  );
+
+  color:white;
+
+  padding:14px 22px;
+
+  border-radius:16px;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:.25s;
+}
+
+.btn-new-booking:hover{
+
+  transform:translateY(-2px);
+
+  box-shadow:0 12px 24px rgba(0,0,0,.18);
+
+}
+
+#bookingMap,
+#realMap{
+  width:100%;
+  height:100%;
+  min-height:500px;
+  border-radius:24px;
+}
+
+.address-autocomplete{
+  position:relative;
+}
+
+.address-suggestions{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  z-index:999;
+  box-shadow:0 10px 40px rgba(0,0,0,.08);
+  display:none;
+}
+
+.address-item{
+  padding:14px 16px;
+  cursor:pointer;
+  transition:.2s;
+  border-bottom:1px solid #eee;
+}
+
+.address-item:hover{
+  background:#f5f7ff;
+}
+
+.transport-map{
+  height:100%;
+  min-height:500px;
+}
+
+.tracking-map{
+  min-height:500px;
+  border-radius:24px;
+  overflow:hidden;
+}
+
+.transport-live{
+  background:#d1fae5;
+  color:#059669;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:.8rem;
+  font-weight:700;
+}
+
+.map-info-value.success{
+  color:#10b981;
+}
+
+.driver-card{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  padding:20px;
+  background:#fff;
+  border-radius:24px;
+  margin-bottom:20px;
+}
+
+.driver-avatar{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#eef2ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.8rem;
+}
+
+.tracking-item{
+  padding:16px;
+  border-radius:16px;
+  margin-bottom:12px;
+  background:#f3f4f6;
+}
+
+.tracking-item.active{
+  background:#dbeafe;
+}
+
+.tracking-item.done{
+  background:#dcfce7;
+}
+
+.btn-new-booking{
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:18px;
+  background:#111827;
+  color:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.transport-map,
+.tracking-map{
+  width:100%;
+  height:650px;
+  border-radius:24px;
+  overflow:hidden;
+  position:relative;
+}
+
+#bookingMap,
+#realMap{
+  width:100%;
+  height:100%;
+  min-height:650px;
+  z-index:1;
+}
