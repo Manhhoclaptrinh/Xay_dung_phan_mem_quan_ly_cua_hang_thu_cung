@@ -29,7 +29,9 @@ def create_app():
 
     from app.user.controllers.main_controller import user_bp
     from app.admin.controllers.dashboard_controller import admin_bp
-
+    from app.router.map_routes import map_bp
+    
+    app.register_blueprint(map_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
@@ -58,6 +60,8 @@ def _seed_data():
     from app.admin.models.vendor_model import Vendor
     from app.admin.models.promotion_model import Promotion
     from app.admin.models.order_model import Order
+
+    from app.user.models.transport_model import TransportBooking
 
     if Product.query.first():
         return
@@ -423,9 +427,55 @@ def _seed_data():
         ),
     ]
 
-    from app import db
+    transport_bookings = [
 
-    for obj_list in [
+        TransportBooking(
+
+            booking_code='PTR-0001',
+
+            owner_name='Nguyễn Văn Nam',
+
+            phone='0912345678',
+
+            pet_name='Bông',
+
+            pickup_address='Cầu Giấy, Hà Nội',
+
+            dropoff_address='Hai Bà Trưng, Hà Nội',
+
+            transport_date='2026-05-17',
+
+            transport_time='09:00',
+
+            vehicle_type='Pet Car',
+
+            payment_method='MoMo',
+
+            health_notes='Bé hơi nhát người lạ',
+
+            insurance_enabled=True,
+
+            recurring=False,
+
+            total_price=120000,
+
+            status='Đang di chuyển',
+
+            tracking_status='moving',
+
+            estimated_minutes=12,
+
+            driver_name='Nguyễn Văn Huy',
+
+            driver_phone='0909123123',
+
+            vehicle_plate='30A-12345',
+
+            camera_stream_url='https://www.youtube.com/embed/jfKfPfyJRdk'
+        )
+    ]
+
+    all_data = [
 
         categories,
 
@@ -447,18 +497,15 @@ def _seed_data():
 
         promotions,
 
-        orders
-    ]:
+        orders,
+
+        transport_bookings
+    ]
+
+    for obj_list in all_data:
 
         for obj in obj_list:
 
             db.session.add(obj)
 
-    db.session.commit()
-
-    from app import db
-    for obj_list in [products, customers, pets, inventory, appointments,
-                     rooms, staff_list, vendors, promotions, orders]:
-        for obj in obj_list:
-            db.session.add(obj)
     db.session.commit()
