@@ -16,6 +16,7 @@
     <span class="nav-link" onclick="scrollToSection('services')">Dịch vụ</span>
     <span class="nav-link" onclick="scrollToSection('pets')">Thú cưng</span>
     <span class="nav-link" onclick="scrollToSection('booking')">Đặt lịch</span>
+    <span class="nav-link" onclick="scrollToSection('transport')">Pet Transport</span>
   </div>
   <div class="nav-actions">
     <div class="search-wrap">
@@ -54,7 +55,7 @@
       <div class="hero-img" style="aspect-ratio:1;font-size:4rem">🐰</div>
     </div>
   </div>
-</section>
+</section>  
 
 <!-- CATEGORIES -->
 <section class="section section-alt" id="categories">
@@ -244,6 +245,473 @@
     </div>
     <button class="btn-submit" onclick="submitBooking()">📅 Xác nhận đặt lịch — Miễn phí</button>
   </div>
+</section>
+
+<!-- PET TRANSPORT -->
+<section class="section" id="transportBookingSection">
+
+  <div class="section-header">
+
+    <div class="section-badge">
+      Pet Transport
+    </div>
+
+    <h2 class="section-title">
+      🚚 Đưa đón thú cưng tận nơi
+    </h2>
+
+    <p class="section-sub">
+      Đặt xe realtime như Grab dành cho thú cưng
+    </p>
+
+  </div>
+
+  <div class="transport-layout">
+
+    <!-- LEFT -->
+
+    <div class="transport-map-wrap">
+
+      <div class="transport-map">
+
+        <div id="bookingMap"></div>
+
+      </div>
+
+      <div class="transport-map-info">
+
+        <div class="map-info-box">
+
+          <div class="map-info-label">
+            ETA
+          </div>
+
+          <div
+            class="map-info-value"
+            id="etaValue"
+          >
+            --
+          </div>
+
+        </div>
+
+        <div class="map-info-box">
+
+          <div class="map-info-label">
+            Khoảng cách
+          </div>
+
+          <div
+            class="map-info-value"
+            id="distanceValue"
+          >
+            --
+          </div>
+
+        </div>
+
+        <div class="map-info-box">
+
+          <div class="map-info-label">
+            Trạng thái
+          </div>
+
+          <div
+            class="map-info-value success"
+            id="transportStatus"
+          >
+            Sẵn sàng
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+
+    <div class="transport-panel">
+
+      <div class="transport-panel-top">
+
+        <div class="transport-title">
+          🚚 Đặt xe ngay
+        </div>
+
+        <div class="transport-live">
+          ONLINE
+        </div>
+
+      </div>
+
+      <!-- PICKUP -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          📍 Điểm đón
+        </label>
+
+        <div class="address-autocomplete">
+
+          <input
+            class="transport-input"
+            id="tpPickup"
+            autocomplete="off"
+            placeholder="Nhập điểm đón..."
+          >
+
+          <div
+            class="address-suggestions"
+            id="pickupSuggestions"
+          ></div>
+
+        </div>
+
+      </div>
+
+      <!-- DROPOFF -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          🏠 Điểm đến
+        </label>
+
+        <div class="address-autocomplete">
+
+          <input
+            class="transport-input"
+            id="tpDropoff"
+            autocomplete="off"
+            placeholder="Nhập điểm đến..."
+          >
+
+          <div
+            class="address-suggestions"
+            id="dropSuggestions"
+          ></div>
+
+        </div>
+
+      </div>
+
+      <!-- OWNER -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          👤 Chủ nuôi
+        </label>
+
+        <input
+          class="transport-input"
+          id="tpOwner"
+          placeholder="Nguyễn Văn A"
+        >
+
+      </div>
+
+      <!-- PHONE -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          📞 SĐT
+        </label>
+
+        <input
+          class="transport-input"
+          id="tpPhone"
+          placeholder="09xxxxxxxx"
+        >
+
+      </div>
+
+      <!-- PET -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          🐶 Tên thú cưng
+        </label>
+
+        <input
+          class="transport-input"
+          id="tpPet"
+          placeholder="Bông / Milo"
+        >
+
+      </div>
+
+      <!-- HEALTH -->
+
+      <div class="transport-input-group">
+
+        <label class="transport-label">
+          🏥 Tình trạng sức khỏe
+        </label>
+
+        <textarea
+          class="transport-textarea"
+          id="tpHealth"
+          placeholder="Dị ứng, lưu ý..."
+        ></textarea>
+
+      </div>
+
+      <!-- DATE -->
+
+      <div class="transport-row">
+
+        <div class="transport-input-group">
+
+          <label class="transport-label">
+            📅 Ngày
+          </label>
+
+          <input
+            type="date"
+            class="transport-input"
+            id="tpDate"
+          >
+
+        </div>
+
+        <div class="transport-input-group">
+
+          <label class="transport-label">
+            ⏰ Giờ
+          </label>
+
+          <input
+            type="time"
+            class="transport-input"
+            id="tpTime"
+          >
+
+        </div>
+
+      </div>
+
+      <!-- VEHICLE -->
+
+      <div class="transport-subtitle">
+        🚘 Chọn xe
+      </div>
+
+      <div class="vehicle-list">
+
+        <div
+          class="vehicle-item active"
+          data-price="50000"
+        >
+
+          <div class="vehicle-left">
+
+            <div class="vehicle-icon">
+              🛵
+            </div>
+
+            <div>
+
+              <div class="vehicle-name">
+                Pet Bike
+              </div>
+
+              <div class="vehicle-desc">
+                Thú cưng nhỏ
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="vehicle-price">
+            50.000đ
+          </div>
+
+        </div>
+
+        <div
+          class="vehicle-item"
+          data-price="120000"
+        >
+
+          <div class="vehicle-left">
+
+            <div class="vehicle-icon">
+              🚗
+            </div>
+
+            <div>
+
+              <div class="vehicle-name">
+                Pet Car
+              </div>
+
+              <div class="vehicle-desc">
+                Điều hòa
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="vehicle-price">
+            120.000đ
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- PAYMENT -->
+
+      <div class="transport-subtitle">
+        💳 Thanh toán
+      </div>
+
+      <div class="payment-list">
+
+        <div class="payment-item active">
+          💵 COD
+        </div>
+
+        <div class="payment-item">
+          📱 MoMo
+        </div>
+
+        <div class="payment-item">
+          🏦 VNPay
+        </div>
+
+      </div>
+
+      <!-- TOTAL -->
+
+      <div class="transport-bottom">
+
+        <div>
+
+          <div class="transport-total-label">
+            Tổng chuyến đi
+          </div>
+
+          <div
+            class="transport-total-price"
+            id="transportPrice"
+          >
+            50.000đ
+          </div>
+
+        </div>
+
+        <button
+          class="btn-transport-book"
+          onclick="submitTransportBooking()"
+        >
+          🚚 Đặt xe
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<section
+  class="section tracking-section"
+  id="trackingSection"
+  style="display:none"
+>
+
+  <div class="section-header">
+
+    <div class="section-badge">
+      Live Tracking
+    </div>
+
+    <h2 class="section-title">
+      📍 Theo dõi realtime
+    </h2>
+
+  </div>
+
+  <div class="tracking-layout">
+
+    <!-- LEFT -->
+
+    <div class="tracking-map">
+
+      <div id="realMap"></div>
+
+    </div>
+
+    <!-- RIGHT -->
+
+    <div class="tracking-info-card">
+
+      <div class="driver-card">
+
+        <div class="driver-avatar">
+          🧑
+        </div>
+
+        <div>
+
+          <div class="driver-name">
+            Nguyễn Văn Huy
+          </div>
+
+          <div class="driver-rate">
+            ⭐ 4.9 • 520 chuyến
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- TIMELINE -->
+
+      <div class="tracking-timeline">
+
+        <div class="tracking-item done">
+          ✅ Đã xác nhận
+        </div>
+
+        <div class="tracking-item active">
+          🚚 Đang tới đón
+        </div>
+
+        <div class="tracking-item">
+          📍 Đang di chuyển
+        </div>
+
+        <div class="tracking-item">
+          🏠 Đã giao thú cưng
+        </div>
+
+      </div>
+
+      <div class="tracking-actions">
+
+        <button
+          class="btn-new-booking"
+          onclick="newTransportBooking()"
+        >
+          ➕ Đặt chuyến mới
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
 </section>
 
 <!-- TESTIMONIALS -->
