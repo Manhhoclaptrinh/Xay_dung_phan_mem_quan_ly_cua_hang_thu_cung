@@ -12,8 +12,9 @@ class Customer(UserMixin, db.Model):
     level       = db.Column(db.String(20), default='Bronze')
     total_spent = db.Column(db.BigInteger, default=0)
     join_date   = db.Column(db.String(20))
+    address = db.Column(db.String(255), default='')
 
-    def get_id(self):   # 👈 bắt buộc với Flask-Login
+    def get_id(self):
         return str(self.id)
 
     def to_dict(self):
