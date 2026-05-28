@@ -2091,46 +2091,231 @@ async function confirmOrder(id) {
 // PROMOTIONS 
 async function admPromotions() {
   const promos = await api('/api/promotions');
+  const running = promos.filter(p => p.status === 'Đang chạy').length;
+  const statusTag = s => ({
+    'Đang chạy': 'green', 'Sắp diễn ra': 'gold', 'Tạm dừng': 'orange', 'Kết thúc': 'pink'
+  }[s] || 'blue');
   document.getElementById('admContent').innerHTML = `
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Khuyến mãi</div><div class="adm-page-sub">${promos.filter(p => p.status === 'Đang chạy').length} đang hoạt động</div></div>
+    <div>
+      <div class="adm-page-title">Khuyến mãi</div>
+      <div class="adm-page-sub">${running} đang hoạt động · ${promos.length} tổng cộng</div>
+    </div>
     <button class="adm-btn adm-btn-primary" onclick="admShowModal('addPromotion')">+ Tạo khuyến mãi</button>
   </div>
-  <div class="adm-grid adm-gauto mb24">
-    ${promos.map(p => `<div class="adm-card">
-      <div class="fxb mb12"><span class="adm-tag adm-tag-${p.status==='Đang chạy'?'green':p.status==='Sắp diễn ra'?'gold':'orange'}">${p.status}</span><span>${p.promo_type.includes('%') ? '🏷️' : '🎁'}</span></div>
-      <div style="font-family:var(--ff);font-size:1rem;font-weight:800;margin-bottom:6px">${p.name}</div>
-      <div style="font-family:monospace;font-size:1.1rem;font-weight:800;color:var(--accent);background:var(--cream2);padding:6px 10px;border-radius:6px;text-align:center;margin-bottom:10px">${p.code}</div>
-      <div class="text-sm text-muted mb8">${p.promo_type} — Giảm ${p.value}%</div>
-      <div class="fxb mt12"><span class="text-sm text-muted">Đã dùng: <strong class="text-gold">${p.used}</strong></span>
-        <button class="adm-btn adm-btn-danger adm-btn-sm" onclick="deletePromo('${p.id}')">🗑</button></div>
-    </div>`).join('')}
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    ${['', 'Đang chạy', 'Sắp diễn ra', 'Tạm dừng', 'Kết thúc'].map(s =>
+      `<button class="adm-btn adm-btn-sec adm-btn-sm" onclick="filterPromos('${s}')">${s || 'Tất cả'}</button>`
+    ).join('')}
+  </div>
+  <div class="adm-grid adm-gauto mb24" id="promoGrid">
+    ${promos.map(p => promoCard(p)).join('')}
   </div>`;
 }
+function promoCard(p) {
+  const statusTag = s => ({'Đang chạy':'green','Sắp diễn ra':'gold','Tạm dừng':'orange','Kết thúc':'pink'}[s]||'blue');
+  return `<div class="adm-card" id="pc-${p.id}">
+    <div class="fxb mb12">
+      <span class="adm-tag adm-tag-${statusTag(p.status)}">${p.status}</span>
+      <span>${p.promo_type && p.promo_type.includes('%') ? '🏷️' : '🎁'}</span>
+    </div>
+    <div style="font-family:var(--ff);font-size:1rem;font-weight:800;margin-bottom:6px">${p.name}</div>
+    <div style="font-family:monospace;font-size:1.1rem;font-weight:800;color:var(--accent);background:var(--cream2);padding:6px 10px;border-radius:6px;text-align:center;margin-bottom:10px">${p.code || '—'}</div>
+    <div class="text-sm text-muted mb4">${p.promo_type} — Giảm <strong>${p.value}%</strong></div>
+    <div class="text-sm text-muted mb8">📅 ${p.valid_from || '?'} → ${p.valid_to || '?'}</div>
+    <div class="divider"></div>
+    <div class="fxb mt8">
+      <span class="text-sm text-muted">Đã dùng: <strong class="text-gold">${p.used}</strong></span>
+      <div style="display:flex;gap:4px">
+        <button class="adm-btn adm-btn-sec adm-btn-sm" onclick="editPromo('${p.id}')">✏️</button>
+        <button class="adm-btn adm-btn-sec adm-btn-sm" onclick="togglePromoStatus('${p.id}','${p.status}')" title="Đổi trạng thái">
+          ${p.status === 'Đang chạy' ? '⏸' : '▶️'}
+        </button>
+        <button class="adm-btn adm-btn-danger adm-btn-sm" onclick="deletePromo('${p.id}')">🗑</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function filterPromos(status) {
+  const url = status ? `/api/promotions?status=${encodeURIComponent(status)}` : '/api/promotions';
+  const promos = await api(url);
+  const grid = document.getElementById('promoGrid');
+  if (grid) grid.innerHTML = promos.map(p => promoCard(p)).join('');
+}
+async function togglePromoStatus(id, current) {
+  const next = current === 'Đang chạy' ? 'Tạm dừng' : 'Đang chạy';
+  const d = await api(`/api/promotions/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: next }) });
+  toast(d.message, d.ok ? 'success' : 'error');
+  admRender();
+}
+async function editPromo(id) {
+  const p = await api(`/api/promotions/${id}`);
+  const cfg = {
+    title: '✏️ Sửa khuyến mãi',
+    body: `
+      <div class="adm-form-group"><label class="adm-label">Tên chương trình</label>
+        <input class="adm-input" id="mPromoName" value="${p.name}"></div>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-label">Loại</label>
+          <select class="adm-select" id="mPromoType">
+            <option ${p.promo_type==='Giảm giá %'?'selected':''}>Giảm giá %</option>
+            <option ${p.promo_type==='Combo'?'selected':''}>Combo</option>
+            <option ${p.promo_type==='Tặng quà'?'selected':''}>Tặng quà</option>
+          </select></div>
+        <div class="adm-form-group"><label class="adm-label">Mức giảm (%)</label>
+          <input class="adm-input" type="number" id="mPromoVal" value="${p.value}"></div>
+      </div>
+      <div class="adm-form-group"><label class="adm-label">Mã giảm giá</label>
+        <input class="adm-input" id="mPromoCode" value="${p.code || ''}"></div>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-label">Ngày bắt đầu</label>
+          <input class="adm-input" type="date" id="mPromoFrom" value="${p.valid_from || ''}"></div>
+        <div class="adm-form-group"><label class="adm-label">Ngày kết thúc</label>
+          <input class="adm-input" type="date" id="mPromoTo" value="${p.valid_to || ''}"></div>
+      </div>
+      <div class="adm-form-group"><label class="adm-label">Trạng thái</label>
+        <select class="adm-select" id="mPromoStatus">
+          ${['Sắp diễn ra','Đang chạy','Tạm dừng','Kết thúc'].map(s =>
+            `<option ${p.status===s?'selected':''}>${s}</option>`).join('')}
+        </select></div>`,
+    foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+           <button class="adm-btn adm-btn-primary" onclick="updatePromo('${id}')">💾 Lưu</button>`
+  };
+  document.getElementById('admModalTitle').textContent = cfg.title;
+  document.getElementById('admModalBody').innerHTML = cfg.body;
+  document.getElementById('admModalFoot').innerHTML = cfg.foot;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+async function updatePromo(id) {
+  const payload = {
+    name: document.getElementById('mPromoName').value,
+    promo_type: document.getElementById('mPromoType').value,
+    value: document.getElementById('mPromoVal').value,
+    code: document.getElementById('mPromoCode').value,
+    valid_from: document.getElementById('mPromoFrom').value,
+    valid_to: document.getElementById('mPromoTo').value,
+    status: document.getElementById('mPromoStatus').value,
+  };
+  const d = await api(`/api/promotions/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  admCloseModal();
+  toast(d.message, d.ok ? 'success' : 'error');
+  admRender();
+}
 async function deletePromo(id) {
+  if (!confirm('Xác nhận xóa khuyến mãi này?')) return;
   const d = await api(`/api/promotions/${id}`, { method: 'DELETE' });
   toast(d.message, 'info');
   admRender();
 }
 
-  // VENDORS
-  async function admVendors() {
+// VENDORS
+async function admVendors() {
   const vendors = await api('/api/vendors');
-  const totalDebt = vendors.reduce((s, v) => s + v.debt, 0);
+  const totalImport = vendors.reduce((s, v) => s + (v.total_import || 0), 0);
   document.getElementById('admContent').innerHTML = `
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Nhà cung cấp</div><div class="adm-page-sub">Tổng công nợ: ${fmt(totalDebt)}</div></div>
+    <div>
+      <div class="adm-page-title">Nhà cung cấp</div>
+      <div class="adm-page-sub">${vendors.length} nhà cung cấp · Tổng nhập: ${fmt(totalImport)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input class="adm-input" id="vendorSearch" placeholder="🔍 Tìm kiếm..." style="width:200px"
+        oninput="searchVendors(this.value)">
+      <button class="adm-btn adm-btn-primary" onclick="admShowModal('addVendor')">+ Thêm NCC</button>
+    </div>
   </div>
-  <div class="adm-grid adm-g3">
-    ${vendors.map(v => `<div class="adm-card">
-      <div class="fxb mb12"><div><div style="font-family:var(--ff);font-weight:800">${v.name}</div><div class="text-muted text-sm">${v.id}</div></div><span class="adm-tag adm-tag-blue">${v.category}</span></div>
-      <div class="text-sm mb8">👤 ${v.contact}</div>
-      <div class="text-sm mb8">📞 ${v.phone}</div>
-      <div class="divider"></div>
-      <div class="fxb mb8"><span class="text-sm text-muted">Công nợ:</span><span class="font-bold text-${v.debt > 0 ? 'pink' : 'teal'}">${v.debt > 0 ? fmt(v.debt) : 'Không nợ'}</span></div>
-      <div class="fxb"><span class="text-sm text-muted">${v.total_orders} đơn hàng</span><button class="adm-btn adm-btn-primary adm-btn-sm" onclick="toast('Trả nợ ${v.name}...','info')">💳 Trả nợ</button></div>
-    </div>`).join('')}
+  <div class="adm-grid adm-g3" id="vendorGrid">
+    ${vendors.map(v => vendorCard(v)).join('')}
   </div>`;
+}
+function vendorCard(v) {
+  return `<div class="adm-card" id="vc-${v.id}">
+    <div class="fxb mb12">
+      <div>
+        <div style="font-family:var(--ff);font-weight:800">${v.name}</div>
+        <div class="text-muted text-sm">${v.id}</div>
+      </div>
+      <span class="adm-tag adm-tag-blue">${v.company || '—'}</span>
+    </div>
+    <div class="text-sm mb6">📞 ${v.phone || '—'}</div>
+    <div class="text-sm mb6">✉️ ${v.email || '—'}</div>
+    <div class="text-sm mb8">📍 ${v.address || '—'}</div>
+    <div class="divider"></div>
+    <div class="fxb mt8">
+      <span class="text-sm text-muted">Nhập hàng: <strong class="text-teal">${fmt(v.total_import || 0)}</strong></span>
+      <div style="display:flex;gap:4px">
+        <button class="adm-btn adm-btn-sec adm-btn-sm" onclick="editVendor('${v.id}')">✏️</button>
+        <button class="adm-btn adm-btn-danger adm-btn-sm" onclick="deleteVendor('${v.id}','${v.name}')">🗑</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function searchVendors(q) {
+  const url = q ? `/api/vendors?search=${encodeURIComponent(q)}` : '/api/vendors';
+  const vendors = await api(url);
+  const grid = document.getElementById('vendorGrid');
+  if (grid) grid.innerHTML = vendors.length ? vendors.map(v => vendorCard(v)).join('') :
+    `<div class="text-muted text-sm" style="grid-column:1/-1;padding:24px;text-align:center">Không tìm thấy nhà cung cấp nào</div>`;
+}
+async function editVendor(id) {
+  const v = await api(`/api/vendors/${id}`);
+  const cfg = {
+    title: '✏️ Sửa nhà cung cấp',
+    body: `
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-label">Tên liên hệ</label>
+          <input class="adm-input" id="mVendorName" value="${v.name || ''}"></div>
+        <div class="adm-form-group"><label class="adm-label">Công ty</label>
+          <input class="adm-input" id="mVendorCompany" value="${v.company || ''}"></div>
+      </div>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-label">Số điện thoại</label>
+          <input class="adm-input" id="mVendorPhone" value="${v.phone || ''}"></div>
+        <div class="adm-form-group"><label class="adm-label">Email</label>
+          <input class="adm-input" id="mVendorEmail" value="${v.email || ''}"></div>
+      </div>
+      <div class="adm-form-group"><label class="adm-label">Địa chỉ</label>
+        <textarea class="adm-input" id="mVendorAddr">${v.address || ''}</textarea></div>`,
+    foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+           <button class="adm-btn adm-btn-primary" onclick="updateVendor('${id}')">💾 Lưu</button>`
+  };
+  document.getElementById('admModalTitle').textContent = cfg.title;
+  document.getElementById('admModalBody').innerHTML = cfg.body;
+  document.getElementById('admModalFoot').innerHTML = cfg.foot;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+async function updateVendor(id) {
+  const payload = {
+    name:    document.getElementById('mVendorName').value,
+    company: document.getElementById('mVendorCompany').value,
+    phone:   document.getElementById('mVendorPhone').value,
+    email:   document.getElementById('mVendorEmail').value,
+    address: document.getElementById('mVendorAddr').value,
+  };
+  const d = await api(`/api/vendors/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  admCloseModal();
+  toast(d.message, d.ok ? 'success' : 'error');
+  admRender();
+}
+async function deleteVendor(id, name) {
+  if (!confirm(`Xác nhận xóa nhà cung cấp "${name}"?`)) return;
+  const d = await api(`/api/vendors/${id}`, { method: 'DELETE' });
+  toast(d.message, d.ok ? 'info' : 'error');
+  admRender();
+}
+async function saveVendor() {
+  const payload = {
+    name:    document.getElementById('mVendorName').value,
+    company: document.getElementById('mVendorCompany').value,
+    phone:   document.getElementById('mVendorPhone').value,
+    email:   document.getElementById('mVendorEmail').value,
+    address: document.getElementById('mVendorAddr').value,
+  };
+  if (!payload.name) { toast('Vui lòng nhập tên nhà cung cấp!', 'error'); return; }
+  const d = await api('/api/vendors', { method: 'POST', body: JSON.stringify(payload) });
+  admCloseModal();
+  toast(d.message, d.ok ? 'success' : 'error');
+  admRender();
 }
 
 // STAFF 
@@ -2249,9 +2434,28 @@ function admShowModal(type) {
       body: `<div class="adm-form-group"><label class="adm-label">Tên sản phẩm</label><input class="adm-input" placeholder="VD: Hạt Purina Pro Plan"></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Số lượng</label><input class="adm-input" type="number" placeholder="0"></div><div class="adm-form-group"><label class="adm-label">Giá bán (đ)</label><input class="adm-input" type="number" placeholder="0"></div></div>`,
       foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button><button class="adm-btn adm-btn-primary" onclick="admCloseModal();toast('Đã thêm sản phẩm!','success')">💾 Thêm</button>`,
     },
+    addVendor: {
+      title: '🏭 Thêm nhà cung cấp',
+      body: `
+        <div class="adm-form-row">
+          <div class="adm-form-group"><label class="adm-label">Tên liên hệ *</label>
+            <input class="adm-input" id="mVendorName" placeholder="Nguyễn Văn A"></div>
+          <div class="adm-form-group"><label class="adm-label">Tên công ty</label>
+            <input class="adm-input" id="mVendorCompany" placeholder="Royal Pet Co."></div>
+        </div>
+        <div class="adm-form-row">
+          <div class="adm-form-group"><label class="adm-label">Số điện thoại</label>
+            <input class="adm-input" id="mVendorPhone" placeholder="0901234567"></div>
+          <div class="adm-form-group"><label class="adm-label">Email</label>
+            <input class="adm-input" id="mVendorEmail" placeholder="contact@company.com"></div>
+        </div>
+        <div class="adm-form-group"><label class="adm-label">Địa chỉ</label>
+          <textarea class="adm-input" id="mVendorAddr" placeholder="Số 1, đường ABC, Hà Nội"></textarea></div>`,
+      foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button><button class="adm-btn adm-btn-primary" onclick="saveVendor()">💾 Thêm</button>`,
+    },
     addPromotion: {
       title: '🎁 Tạo khuyến mãi',
-      body: `<div class="adm-form-group"><label class="adm-label">Tên chương trình</label><input class="adm-input" id="mPromoName" placeholder="Mừng Tết..."></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Loại</label><select class="adm-select" id="mPromoType"><option>Giảm giá %</option><option>Combo</option></select></div><div class="adm-form-group"><label class="adm-label">Mức giảm (%)</label><input class="adm-input" type="number" id="mPromoVal" placeholder="20"></div></div><div class="adm-form-group"><label class="adm-label">Mã giảm giá</label><input class="adm-input" id="mPromoCode" placeholder="TET2025"></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Ngày bắt đầu</label><input class="adm-input" type="date" id="mPromoFrom"></div><div class="adm-form-group"><label class="adm-label">Ngày kết thúc</label><input class="adm-input" type="date" id="mPromoTo"></div></div>`,
+      body: `<div class="adm-form-group"><label class="adm-label">Tên chương trình *</label><input class="adm-input" id="mPromoName" placeholder="Mừng Tết..."></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Loại</label><select class="adm-select" id="mPromoType"><option>Giảm giá %</option><option>Combo</option><option>Tặng quà</option></select></div><div class="adm-form-group"><label class="adm-label">Mức giảm (%)</label><input class="adm-input" type="number" id="mPromoVal" placeholder="20"></div></div><div class="adm-form-group"><label class="adm-label">Mã giảm giá</label><input class="adm-input" id="mPromoCode" placeholder="TET2025"></div><div class="adm-form-row"><div class="adm-form-group"><label class="adm-label">Ngày bắt đầu</label><input class="adm-input" type="date" id="mPromoFrom"></div><div class="adm-form-group"><label class="adm-label">Ngày kết thúc</label><input class="adm-input" type="date" id="mPromoTo"></div></div><div class="adm-form-group"><label class="adm-label">Trạng thái ban đầu</label><select class="adm-select" id="mPromoStatus"><option>Sắp diễn ra</option><option>Đang chạy</option></select></div>`,
       foot: `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button><button class="adm-btn adm-btn-primary" onclick="savePromotion()">🎁 Tạo</button>`,
     },
     addReminder: {
@@ -2355,17 +2559,20 @@ async function saveCustomer() {
 }
 
 async function savePromotion() {
+  const name = document.getElementById('mPromoName').value;
+  if (!name) { toast('Vui lòng nhập tên khuyến mãi!', 'error'); return; }
   const payload = {
-    name:       document.getElementById('mPromoName').value,
+    name,
     promo_type: document.getElementById('mPromoType').value,
     value:      document.getElementById('mPromoVal').value,
     code:       document.getElementById('mPromoCode').value,
     valid_from: document.getElementById('mPromoFrom').value,
     valid_to:   document.getElementById('mPromoTo').value,
+    status:     document.getElementById('mPromoStatus') ? document.getElementById('mPromoStatus').value : 'Sắp diễn ra',
   };
   const d = await api('/api/promotions', { method: 'POST', body: JSON.stringify(payload) });
   admCloseModal();
-  toast(d.message, 'success');
+  toast(d.message, d.ok ? 'success' : 'error');
   admRender();
 }
 
