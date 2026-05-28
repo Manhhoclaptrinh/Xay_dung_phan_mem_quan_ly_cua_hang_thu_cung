@@ -1,1 +1,0 @@
-# Nhom5: Xay_dung_phan_mem_quan_ly_cua_hang_thu_cung
