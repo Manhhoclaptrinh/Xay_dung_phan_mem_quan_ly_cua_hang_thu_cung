@@ -229,24 +229,18 @@ def api_add_customer():
     return jsonify({'ok': True, 'message': 'Đã thêm khách hàng!'})
 
 
-# =========================================================
 # INVENTORY / PRODUCT MANAGEMENT
-# =========================================================
 
 # GET ALL + SEARCH + FILTER
 @admin_bp.route('/api/inventory')
 def api_inventory():
 
     search = request.args.get('search', '').strip()
-
     category = request.args.get('category', '').strip()
-
     brand = request.args.get('brand', '').strip()
-
     stock = request.args.get('stock', '').strip()
 
     min_price = request.args.get('min_price', type=int)
-
     max_price = request.args.get('max_price', type=int)
 
     query = Inventory.query
@@ -268,7 +262,7 @@ def api_inventory():
     if category:
 
         query = query.filter(
-            Inventory.category == category
+            Inventory.category_id == category
         )
 
     # FILTER BRAND
@@ -341,7 +335,7 @@ def api_add_inventory():
 
         name=data.get('name', ''),
 
-        category=data.get('category', ''),
+        category_id=data.get('category_id', ''),
 
         brand=data.get('brand', ''),
 
@@ -361,13 +355,9 @@ def api_add_inventory():
             data.get('min_qty', 5)
         ),
 
-        unit=data.get('unit', ''),
-
         expiry=data.get('expiry', ''),
 
         supplier=data.get('supplier', ''),
-
-        image=data.get('image', ''),
 
         barcode=data.get('barcode', ''),
 
@@ -405,9 +395,9 @@ def api_update_inventory(item_id):
         item.name
     )
 
-    item.category = data.get(
-        'category',
-        item.category
+    item.category_id = data.get(
+        'category_id', 
+        item.category_id
     )
 
     item.brand = data.get(
@@ -443,11 +433,6 @@ def api_update_inventory(item_id):
         )
     )
 
-    item.unit = data.get(
-        'unit',
-        item.unit
-    )
-
     item.expiry = data.get(
         'expiry',
         item.expiry
@@ -456,11 +441,6 @@ def api_update_inventory(item_id):
     item.supplier = data.get(
         'supplier',
         item.supplier
-    )
-
-    item.image = data.get(
-        'image',
-        item.image
     )
 
     item.barcode = data.get(
@@ -560,79 +540,54 @@ def api_staff():
     return jsonify([s.to_dict() for s in staff])
 
 
-# ============================================================
-# VENDORS (NHÀ CUNG CẤP)
-# ============================================================
-
+# VENDORS
 @admin_bp.route('/api/vendors')
 def api_vendors():
-    import uuid
     search = request.args.get('search', '').strip()
-    query = Vendor.query
     if search:
-        query = query.filter(
+        vendors = Vendor.query.filter(
             (Vendor.name.ilike(f'%{search}%')) |
-            (Vendor.phone.ilike(f'%{search}%')) |
-            (Vendor.email.ilike(f'%{search}%')) |
+            (Vendor.id.ilike(f'%{search}%')) |
             (Vendor.company.ilike(f'%{search}%'))
-        )
-    vendors = query.order_by(Vendor.name).all()
+        ).all()
+    else:
+        vendors = Vendor.query.all()
     return jsonify([v.to_dict() for v in vendors])
 
 
-@admin_bp.route('/api/vendors/<vendor_id>')
-def api_vendor_detail(vendor_id):
+@admin_bp.route('/api/vendors/<vendor_id>', methods=['GET'])
+def api_get_vendor(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
     return jsonify(vendor.to_dict())
 
 
 @admin_bp.route('/api/vendors', methods=['POST'])
 def api_add_vendor():
-    import uuid
     data = request.get_json(force=True)
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'ok': False, 'message': 'Tên nhà cung cấp không được để trống!'}), 400
-
-    phone = data.get('phone', '').strip()
-    if phone and Vendor.query.filter_by(phone=phone).first():
-        return jsonify({'ok': False, 'message': 'Số điện thoại đã tồn tại!'}), 400
-
+    import uuid
     vendor = Vendor(
-        id           = 'V' + str(uuid.uuid4())[:5].upper(),
-        name         = name,
-        phone        = phone,
-        email        = data.get('email', '').strip(),
-        address      = data.get('address', '').strip(),
-        company      = data.get('company', name).strip(),
-        total_import = 0,
+        id='V' + str(uuid.uuid4())[:6].upper(),
+        name=data.get('name', ''),
+        company=data.get('company', ''),
+        phone=data.get('phone', ''),
+        email=data.get('email', ''),
+        address=data.get('address', ''),
+        total_import=0
     )
     db.session.add(vendor)
     db.session.commit()
-    return jsonify({'ok': True, 'message': f'Đã thêm nhà cung cấp {name}!', 'id': vendor.id})
+    return jsonify({'ok': True, 'message': 'Đã thêm nhà cung cấp!'})
 
 
 @admin_bp.route('/api/vendors/<vendor_id>', methods=['PUT'])
 def api_update_vendor(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
     data = request.get_json(force=True)
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'ok': False, 'message': 'Tên không được để trống!'}), 400
-
-    phone = data.get('phone', '').strip()
-    if phone:
-        existing = Vendor.query.filter_by(phone=phone).first()
-        if existing and existing.id != vendor_id:
-            return jsonify({'ok': False, 'message': 'Số điện thoại đã tồn tại!'}), 400
-
-    vendor.name    = name
-    vendor.phone   = phone
-    vendor.email   = data.get('email', vendor.email).strip()
-    vendor.address = data.get('address', vendor.address).strip()
-    vendor.company = data.get('company', vendor.company).strip()
+    vendor.name = data.get('name', vendor.name)
+    vendor.company = data.get('company', vendor.company)
+    vendor.phone = data.get('phone', vendor.phone)
+    vendor.email = data.get('email', vendor.email)
+    vendor.address = data.get('address', vendor.address)
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã cập nhật nhà cung cấp!'})
 
@@ -640,124 +595,76 @@ def api_update_vendor(vendor_id):
 @admin_bp.route('/api/vendors/<vendor_id>', methods=['DELETE'])
 def api_delete_vendor(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
-    name = vendor.name
     db.session.delete(vendor)
     db.session.commit()
-    return jsonify({'ok': True, 'message': f'Đã xóa nhà cung cấp {name}!'})
+    return jsonify({'ok': True, 'message': 'Đã xóa nhà cung cấp!'})
 
 
-# ============================================================
-# PROMOTIONS (KHUYẾN MÃI)
-# ============================================================
 
+# PROMOTIONS
 @admin_bp.route('/api/promotions')
 def api_promotions():
-    search = request.args.get('search', '').strip()
-    status_filter = request.args.get('status', '').strip()
-    query = Promotion.query
-    if search:
-        query = query.filter(
-            (Promotion.name.ilike(f'%{search}%')) |
-            (Promotion.code.ilike(f'%{search}%'))
-        )
-    if status_filter:
-        query = query.filter(Promotion.status == status_filter)
-    promos = query.order_by(Promotion.valid_from.desc()).all()
+    promos = Promotion.query.all()
     return jsonify([p.to_dict() for p in promos])
-
-
-@admin_bp.route('/api/promotions/<promo_id>')
-def api_promotion_detail(promo_id):
-    promo = Promotion.query.get_or_404(promo_id)
-    return jsonify(promo.to_dict())
 
 
 @admin_bp.route('/api/promotions', methods=['POST'])
 def api_add_promotion():
-    import uuid
     data = request.get_json(force=True)
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'ok': False, 'message': 'Tên khuyến mãi không được để trống!'}), 400
-
-    code = data.get('code', '').strip().upper()
-    if code and Promotion.query.filter_by(code=code).first():
-        return jsonify({'ok': False, 'message': f'Mã giảm giá {code} đã tồn tại!'}), 400
-
+    import uuid
     promo = Promotion(
         id         = 'PR' + str(uuid.uuid4())[:4].upper(),
-        name       = name,
+        name       = data.get('name', ''),
         promo_type = data.get('promo_type', 'Giảm giá %'),
         value      = int(data.get('value', 0)),
-        code       = code,
+        code       = data.get('code', '').upper(),
         valid_from = data.get('valid_from', ''),
         valid_to   = data.get('valid_to', ''),
-        status     = data.get('status', 'Sắp diễn ra'),
+        status     = 'Sắp diễn ra',
         used       = 0,
     )
     db.session.add(promo)
     db.session.commit()
-    return jsonify({'ok': True, 'message': f'Đã tạo khuyến mãi {name}!', 'id': promo.id})
+    return jsonify({'ok': True, 'message': 'Đã tạo khuyến mãi!'})
+
+
+@admin_bp.route('/api/promotions/<promo_id>', methods=['DELETE'])
+def api_delete_promotion(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    db.session.delete(promo)
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã xóa khuyến mãi!'})
+
+
+@admin_bp.route('/api/promotions/<promo_id>', methods=['GET'])
+def api_get_promotion(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    return jsonify(promo.to_dict())
 
 
 @admin_bp.route('/api/promotions/<promo_id>', methods=['PUT'])
 def api_update_promotion(promo_id):
     promo = Promotion.query.get_or_404(promo_id)
     data = request.get_json(force=True)
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'ok': False, 'message': 'Tên không được để trống!'}), 400
-
-    code = data.get('code', '').strip().upper()
-    if code:
-        existing = Promotion.query.filter_by(code=code).first()
-        if existing and existing.id != promo_id:
-            return jsonify({'ok': False, 'message': f'Mã {code} đã tồn tại!'}), 400
-
-    promo.name       = name
+    promo.name = data.get('name', promo.name)
     promo.promo_type = data.get('promo_type', promo.promo_type)
-    promo.value      = int(data.get('value', promo.value))
-    promo.code       = code or promo.code
+    promo.value = int(data.get('value', 0))
+    promo.code = data.get('code', '').upper() if data.get('code') else promo.code
     promo.valid_from = data.get('valid_from', promo.valid_from)
-    promo.valid_to   = data.get('valid_to', promo.valid_to)
-    promo.status     = data.get('status', promo.status)
+    promo.valid_to = data.get('valid_to', promo.valid_to)
+    promo.status = data.get('status', promo.status)
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã cập nhật khuyến mãi!'})
 
 
 @admin_bp.route('/api/promotions/<promo_id>/status', methods=['PATCH'])
-def api_update_promotion_status(promo_id):
+def api_patch_promotion_status(promo_id):
     promo = Promotion.query.get_or_404(promo_id)
     data = request.get_json(force=True)
-    new_status = data.get('status', '').strip()
-    valid_statuses = ['Sắp diễn ra', 'Đang chạy', 'Kết thúc', 'Tạm dừng']
-    if new_status not in valid_statuses:
-        return jsonify({'ok': False, 'message': f'Trạng thái không hợp lệ!'}), 400
-    promo.status = new_status
+    promo.status = data.get('status', promo.status)
     db.session.commit()
-    return jsonify({'ok': True, 'message': f'Đã cập nhật trạng thái: {new_status}!'})
+    return jsonify({'ok': True, 'message': 'Đã cập nhật trạng thái khuyến mãi!'})
 
-
-@admin_bp.route('/api/promotions/<promo_id>/use', methods=['PATCH'])
-def api_use_promotion(promo_id):
-    """Tăng số lần dùng khi khách áp dụng mã"""
-    promo = Promotion.query.get_or_404(promo_id)
-    if promo.status != 'Đang chạy':
-        return jsonify({'ok': False, 'message': 'Khuyến mãi này chưa kích hoạt!'}), 400
-    promo.used += 1
-    db.session.commit()
-    return jsonify({'ok': True, 'message': 'Đã ghi nhận lượt dùng!', 'used': promo.used})
-
-
-@admin_bp.route('/api/promotions/<promo_id>', methods=['DELETE'])
-def api_delete_promotion(promo_id):
-    promo = Promotion.query.get_or_404(promo_id)
-    name = promo.name
-    db.session.delete(promo)
-    db.session.commit()
-    return jsonify({'ok': True, 'message': f'Đã xóa khuyến mãi {name}!'})
 
 
 # ORDERS
