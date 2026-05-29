@@ -543,15 +543,84 @@ def api_staff():
 # VENDORS
 @admin_bp.route('/api/vendors')
 def api_vendors():
-    vendors = Vendor.query.all()
+    search = request.args.get('search', '').strip()
+    query = Vendor.query
+
+    if search:
+        query = query.filter(
+            (Vendor.name.ilike(f'%{search}%')) |
+            (Vendor.company.ilike(f'%{search}%')) |
+            (Vendor.email.ilike(f'%{search}%')) |
+            (Vendor.phone.ilike(f'%{search}%')) |
+            (Vendor.id.ilike(f'%{search}%'))
+        )
+
+    vendors = query.all()
     return jsonify([v.to_dict() for v in vendors])
+
+
+@admin_bp.route('/api/vendors/<vendor_id>')
+def api_vendor_detail(vendor_id):
+    vendor = Vendor.query.get_or_404(vendor_id)
+    return jsonify(vendor.to_dict())
+
+
+@admin_bp.route('/api/vendors', methods=['POST'])
+def api_add_vendor():
+    data = request.get_json(force=True)
+    import uuid
+    vendor = Vendor(
+        id      = 'V' + str(uuid.uuid4())[:4].upper(),
+        name    = data.get('name', '').strip(),
+        company = data.get('company', '').strip(),
+        phone   = data.get('phone', '').strip(),
+        email   = data.get('email', '').strip(),
+        address = data.get('address', '').strip(),
+        total_import = 0,
+    )
+    db.session.add(vendor)
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã thêm nhà cung cấp!'})
+
+
+@admin_bp.route('/api/vendors/<vendor_id>', methods=['PUT'])
+def api_update_vendor(vendor_id):
+    vendor = Vendor.query.get_or_404(vendor_id)
+    data = request.get_json(force=True)
+    vendor.name = data.get('name', vendor.name).strip()
+    vendor.company = data.get('company', vendor.company).strip()
+    vendor.phone = data.get('phone', vendor.phone).strip()
+    vendor.email = data.get('email', vendor.email).strip()
+    vendor.address = data.get('address', vendor.address).strip()
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã cập nhật nhà cung cấp!'})
+
+
+@admin_bp.route('/api/vendors/<vendor_id>', methods=['DELETE'])
+def api_delete_vendor(vendor_id):
+    vendor = Vendor.query.get_or_404(vendor_id)
+    db.session.delete(vendor)
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã xóa nhà cung cấp!'})
 
 
 # PROMOTIONS
 @admin_bp.route('/api/promotions')
 def api_promotions():
-    promos = Promotion.query.all()
+    status = request.args.get('status', '').strip()
+    query = Promotion.query
+
+    if status:
+        query = query.filter(Promotion.status == status)
+
+    promos = query.all()
     return jsonify([p.to_dict() for p in promos])
+
+
+@admin_bp.route('/api/promotions/<promo_id>')
+def api_promotion_detail(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    return jsonify(promo.to_dict())
 
 
 @admin_bp.route('/api/promotions', methods=['POST'])
@@ -560,18 +629,42 @@ def api_add_promotion():
     import uuid
     promo = Promotion(
         id         = 'PR' + str(uuid.uuid4())[:4].upper(),
-        name       = data.get('name', ''),
-        promo_type = data.get('promo_type', 'Giảm giá %'),
+        name       = data.get('name', '').strip(),
+        promo_type = data.get('promo_type', 'Giảm giá %').strip(),
         value      = int(data.get('value', 0)),
-        code       = data.get('code', '').upper(),
-        valid_from = data.get('valid_from', ''),
-        valid_to   = data.get('valid_to', ''),
-        status     = 'Sắp diễn ra',
-        used       = 0,
+        code       = data.get('code', '').upper().strip(),
+        valid_from = data.get('valid_from', '').strip(),
+        valid_to   = data.get('valid_to', '').strip(),
+        status     = data.get('status', 'Sắp diễn ra').strip() or 'Sắp diễn ra',
+        used       = int(data.get('used', 0)),
     )
     db.session.add(promo)
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã tạo khuyến mãi!'})
+
+
+@admin_bp.route('/api/promotions/<promo_id>', methods=['PUT'])
+def api_update_promotion(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    data = request.get_json(force=True)
+    promo.name = data.get('name', promo.name).strip()
+    promo.promo_type = data.get('promo_type', promo.promo_type).strip()
+    promo.value = int(data.get('value', promo.value))
+    promo.code = data.get('code', promo.code or '').upper().strip()
+    promo.valid_from = data.get('valid_from', promo.valid_from).strip()
+    promo.valid_to = data.get('valid_to', promo.valid_to).strip()
+    promo.status = data.get('status', promo.status).strip()
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã cập nhật khuyến mãi!'})
+
+
+@admin_bp.route('/api/promotions/<promo_id>/status', methods=['PATCH'])
+def api_patch_promotion_status(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    data = request.get_json(force=True)
+    promo.status = data.get('status', promo.status).strip()
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Đã cập nhật trạng thái khuyến mãi!'})
 
 
 @admin_bp.route('/api/promotions/<promo_id>', methods=['DELETE'])
