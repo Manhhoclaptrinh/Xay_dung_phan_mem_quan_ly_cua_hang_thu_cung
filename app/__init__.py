@@ -205,13 +205,9 @@ def _seed_data():
 
             min_qty=10,
 
-            unit='Túi 2kg',
-
             expiry='2025-12-01',
 
             supplier='Royal Pet Foods',
-
-            image='/static/img/products/royal.jpg',
 
             barcode='893850143222',
 
@@ -238,13 +234,9 @@ def _seed_data():
 
             min_qty=30,
 
-            unit='Hộp 85g',
-
             expiry='2025-05-20',
 
             supplier='Whiskas VN',
-
-            image='/static/img/products/whiskas.jpg',
 
             barcode='893850155555',
 
@@ -271,11 +263,7 @@ def _seed_data():
 
             min_qty=5,
 
-            unit='Cái',
-
             supplier='PetCraft',
-
-            image='/static/img/products/cat-toy.jpg',
 
             barcode='893850166666',
 
@@ -302,13 +290,9 @@ def _seed_data():
 
             min_qty=5,
 
-            unit='Lọ',
-
             expiry='2024-11-30',
 
             supplier='VetPharm',
-
-            image='/static/img/products/vaccine.jpg',
 
             barcode='893850177777',
 

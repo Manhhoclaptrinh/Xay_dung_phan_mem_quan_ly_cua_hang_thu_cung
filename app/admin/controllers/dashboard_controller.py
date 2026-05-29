@@ -229,24 +229,18 @@ def api_add_customer():
     return jsonify({'ok': True, 'message': 'Đã thêm khách hàng!'})
 
 
-# =========================================================
 # INVENTORY / PRODUCT MANAGEMENT
-# =========================================================
 
 # GET ALL + SEARCH + FILTER
 @admin_bp.route('/api/inventory')
 def api_inventory():
 
     search = request.args.get('search', '').strip()
-
     category = request.args.get('category', '').strip()
-
     brand = request.args.get('brand', '').strip()
-
     stock = request.args.get('stock', '').strip()
 
     min_price = request.args.get('min_price', type=int)
-
     max_price = request.args.get('max_price', type=int)
 
     query = Inventory.query
@@ -268,7 +262,7 @@ def api_inventory():
     if category:
 
         query = query.filter(
-            Inventory.category == category
+            Inventory.category_id == category
         )
 
     # FILTER BRAND
@@ -341,7 +335,7 @@ def api_add_inventory():
 
         name=data.get('name', ''),
 
-        category=data.get('category', ''),
+        category_id=data.get('category_id', ''),
 
         brand=data.get('brand', ''),
 
@@ -361,13 +355,9 @@ def api_add_inventory():
             data.get('min_qty', 5)
         ),
 
-        unit=data.get('unit', ''),
-
         expiry=data.get('expiry', ''),
 
         supplier=data.get('supplier', ''),
-
-        image=data.get('image', ''),
 
         barcode=data.get('barcode', ''),
 
@@ -405,9 +395,9 @@ def api_update_inventory(item_id):
         item.name
     )
 
-    item.category = data.get(
-        'category',
-        item.category
+    item.category_id = data.get(
+        'category_id', 
+        item.category_id
     )
 
     item.brand = data.get(
@@ -443,11 +433,6 @@ def api_update_inventory(item_id):
         )
     )
 
-    item.unit = data.get(
-        'unit',
-        item.unit
-    )
-
     item.expiry = data.get(
         'expiry',
         item.expiry
@@ -456,11 +441,6 @@ def api_update_inventory(item_id):
     item.supplier = data.get(
         'supplier',
         item.supplier
-    )
-
-    item.image = data.get(
-        'image',
-        item.image
     )
 
     item.barcode = data.get(

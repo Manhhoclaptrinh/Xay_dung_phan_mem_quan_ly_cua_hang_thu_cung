@@ -688,19 +688,6 @@ async function admInventory(
 
             <td>
 
-              <div class="fxc gap12">
-
-                <img
-                  src="${i.image || '/static/img/no-image.png'}"
-                  style="
-                    width:52px;
-                    height:52px;
-                    object-fit:cover;
-                    border-radius:10px;
-                    border:1px solid #eee
-                  "
-                >
-
                 <div>
 
                   <div class="font-bold">
@@ -712,8 +699,6 @@ async function admInventory(
                   </div>
 
                 </div>
-
-              </div>
 
             </td>
 
@@ -730,7 +715,7 @@ async function admInventory(
               <div class="
                 ${i.quantity < i.min_qty ? 'text-danger font-bold' : ''}
               ">
-                ${i.quantity} ${i.unit || ''}
+                ${i.quantity}
               </div>
 
             </td>
@@ -856,19 +841,6 @@ async function viewProduct(id) {
   document.getElementById('admModalBody').innerHTML = `
 
     <div class="adm-grid adm-g2">
-
-      <div>
-
-        <img
-          src="${p.image || '/static/img/no-image.png'}"
-          style="
-            width:100%;
-            border-radius:16px;
-            border:1px solid #eee;
-          "
-        >
-
-      </div>
 
       <div>
 
@@ -1052,30 +1024,6 @@ async function admAddProduct() {
         >
       </div>
 
-      <div class="adm-form-group">
-        <label class="adm-label">
-          Đơn vị
-        </label>
-
-        <input
-          id="pUnit"
-          class="adm-input"
-        >
-      </div>
-
-    </div>
-
-    <div class="adm-form-group">
-
-      <label class="adm-label">
-        Hình ảnh
-      </label>
-
-      <input
-        id="pImage"
-        class="adm-input"
-      >
-
     </div>
 
     <div class="adm-form-group">
@@ -1146,12 +1094,6 @@ async function saveProduct() {
 
     quantity:
       document.getElementById('pQty').value,
-
-    unit:
-      document.getElementById('pUnit').value,
-
-    image:
-      document.getElementById('pImage').value,
 
     barcode:
       document.getElementById('pBarcode').value,
@@ -1297,16 +1239,6 @@ async function editProduct(id) {
     <div class="adm-form-row">
 
       <div class="adm-form-group">
-        <label class="adm-label">Đơn vị</label>
-
-        <input
-          id="ePUnit"
-          class="adm-input"
-          value="${p.unit || ''}"
-        >
-      </div>
-
-      <div class="adm-form-group">
         <label class="adm-label">Hạn sử dụng</label>
 
         <input
@@ -1326,16 +1258,6 @@ async function editProduct(id) {
         id="ePBarcode"
         class="adm-input"
         value="${p.barcode || ''}"
-      >
-    </div>
-
-    <div class="adm-form-group">
-      <label class="adm-label">Hình ảnh</label>
-
-      <input
-        id="ePImage"
-        class="adm-input"
-        value="${p.image || ''}"
       >
     </div>
 
@@ -1399,17 +1321,11 @@ async function updateProduct(id) {
     min_qty:
       document.getElementById('ePMinQty').value,
 
-    unit:
-      document.getElementById('ePUnit').value,
-
     expiry:
       document.getElementById('ePExpiry').value,
 
     barcode:
       document.getElementById('ePBarcode').value,
-
-    image:
-      document.getElementById('ePImage').value,
 
     description:
       document.getElementById('ePDesc').value,

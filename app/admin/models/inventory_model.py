@@ -20,12 +20,10 @@ class Inventory(db.Model):
     quantity = db.Column(db.Integer, default=0)
     min_qty = db.Column(db.Integer, default=5)
 
-    unit = db.Column(db.String(40))
     expiry = db.Column(db.String(20))
 
     supplier = db.Column(db.String(120))
 
-    image = db.Column(db.String(255))
     barcode = db.Column(db.String(120))
 
     description = db.Column(db.Text)
@@ -68,13 +66,9 @@ class Inventory(db.Model):
 
             'min_qty': self.min_qty,
 
-            'unit': self.unit,
-
             'expiry': self.expiry,
 
             'supplier': self.supplier,
-
-            'image': self.image,
 
             'barcode': self.barcode,
 
