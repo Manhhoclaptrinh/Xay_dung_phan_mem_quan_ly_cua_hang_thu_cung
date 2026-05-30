@@ -1,38 +1,46 @@
-import sqlite3
+from app import db
 
-DATABASE = 'instance/pawstore.db'
+class KhuyenMai(db.Model):
+    __tablename__ = 'khuyenmai'
 
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
 
-def get_all_khuyenmai():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    ten_km = db.Column(
+        db.String(100),
+        nullable=False
+    )
 
-    cursor.execute("SELECT * FROM khuyenmai")
-    data = cursor.fetchall()
+    loai_km = db.Column(
+        db.String(50)
+    )
 
-    conn.close()
-    return data
+    giam_gia = db.Column(
+        db.Float
+    )
 
+    mo_ta = db.Column(
+        db.Text
+    )
 
-def add_khuyenmai(ten_km, loai_km, giam_gia, mo_ta, ngay_bd, ngay_kt):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    ngay_bat_dau = db.Column(
+        db.String(20)
+    )
 
-    cursor.execute("""
-        INSERT INTO khuyenmai
-        (ten_km, loai_km, giam_gia, mo_ta, ngay_bat_dau, ngay_ket_thuc)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (ten_km, loai_km, giam_gia, mo_ta, ngay_bd, ngay_kt))
+    ngay_ket_thuc = db.Column(
+        db.String(20)
+    )
 
-    conn.commit()
-    conn.close()
-
-
-def delete_khuyenmai(id):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM khuyenmai WHERE id=?", (id,))
-
-    conn.commit()
-    conn.close()
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "ten_km": self.ten_km,
+            "loai_km": self.loai_km,
+            "giam_gia": self.giam_gia,
+            "mo_ta": self.mo_ta,
+            "ngay_bat_dau": self.ngay_bat_dau,
+            "ngay_ket_thuc": self.ngay_ket_thuc
+        }

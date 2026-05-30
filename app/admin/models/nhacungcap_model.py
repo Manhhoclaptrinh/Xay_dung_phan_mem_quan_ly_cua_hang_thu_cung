@@ -1,38 +1,42 @@
-import sqlite3
+from app import db
 
-DATABASE = 'instance/pawstore.db'
+class NhaCungCap(db.Model):
 
+    __tablename__ = 'nhacungcap'
 
-def get_all_ncc():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
 
-    cursor.execute("SELECT * FROM nhacungcap")
-    data = cursor.fetchall()
+    ten_ncc = db.Column(
+        db.String(100)
+    )
 
-    conn.close()
-    return data
+    dia_chi = db.Column(
+        db.Text
+    )
 
+    so_dien_thoai = db.Column(
+        db.String(20)
+    )
 
-def add_ncc(ten, diachi, sdt, email):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    email = db.Column(
+        db.String(100)
+    )
 
-    cursor.execute("""
-        INSERT INTO nhacungcap
-        (ten_ncc, dia_chi, so_dien_thoai, email)
-        VALUES (?, ?, ?, ?)
-    """, (ten, diachi, sdt, email))
+    def to_dict(self):
 
-    conn.commit()
-    conn.close()
+        return {
 
+            "id": self.id,
 
-def delete_ncc(id):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+            "ten_ncc": self.ten_ncc,
 
-    cursor.execute("DELETE FROM nhacungcap WHERE id=?", (id,))
+            "dia_chi": self.dia_chi,
 
-    conn.commit()
-    conn.close()
+            "so_dien_thoai": self.so_dien_thoai,
+
+            "email": self.email
+        }
