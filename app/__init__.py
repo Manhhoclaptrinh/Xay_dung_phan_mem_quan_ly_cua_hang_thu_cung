@@ -43,18 +43,6 @@ def create_app():
 
 import os
 
-def create_app():
-    app = Flask(
-        __name__,
-        template_folder='../templates',
-        static_folder='../static'
-    )
-
-    os.makedirs("instance", exist_ok=True)
-
-    app.config['SECRET_KEY'] = 'pawstore-secret-key-2024'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pawstore.db'
-
 def _seed_data():
     """Seed initial data if tables are empty."""
 
