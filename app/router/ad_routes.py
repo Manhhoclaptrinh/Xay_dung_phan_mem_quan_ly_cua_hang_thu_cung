@@ -4,16 +4,7 @@ from app.admin.controllers.staff_controller import *
 from app.admin.controllers.dashboard_controller import *
 from flask import request
 
-admin_bp = Blueprint(
-    "admin",
-    __name__,
-    template_folder="../../templates/admin"
-)
-
-@admin_bp.route("/")
-def dashboard():
-    data = get_dashboard_data()
-    return render_template("index.html", **data)
+# admin_bp định nghĩa trong dashboard_controller, import qua * ở trên
 
 from flask import render_template, request, redirect
 from app import app
@@ -29,10 +20,7 @@ from app.admin.controllers.nhacungcap_controller import *
 @app.route('/admin/khuyenmai')
 def khuyenmai():
     data = get_khuyenmai()
-    return render_template(
-        'admin/khuyenmai.html',
-        khuyenmais=data
-    )
+    return render_template('admin/khuyenmai.html', khuyenmais=data)
 
 
 @app.route('/admin/add-khuyenmai', methods=['POST'])
@@ -54,11 +42,7 @@ def delete_km(id):
 @app.route('/admin/nhacungcap')
 def nhacungcap():
     data = get_ncc()
-
-    return render_template(
-        'admin/nhacungcap.html',
-        nhacungcaps=data
-    )
+    return render_template('admin/nhacungcap.html', nhacungcaps=data)
 
 
 @app.route('/admin/add-ncc', methods=['POST'])
