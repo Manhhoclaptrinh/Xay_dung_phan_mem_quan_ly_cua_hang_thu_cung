@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, jsonify, request
 from app.admin.models.customer_model import Customer
 from app.admin.models.inventory_model import Inventory
 from app.admin.models.appointment_model import Appointment
