@@ -2235,26 +2235,307 @@ async function saveVendor() {
 }
 
 // STAFF 
+// =============================================================
+// STAFF — THÊM / SỬA / XÓA / SẮP XẾP LỊCH
+// Thay thế hoàn toàn hàm admStaff() cũ.
+// Copy đoạn này, tìm hàm admStaff() cũ trong admin.js và thay bằng đoạn dưới.
+// =============================================================
+
+// ── Danh sách ca cố định (khớp với server) ──────────────────
+const STAFF_SHIFTS = [
+  'Ca sáng (7h-12h)',
+  'Ca chiều (13h-18h)',
+  'Ca tối (18h-22h)',
+  'Hành chính (8h-17h)',
+  'Cả ngày (7h-22h)',
+];
+
+// ── Hàm chính render trang Nhân viên ────────────────────────
 async function admStaff() {
   const staff = await api('/api/staff');
   document.getElementById('admContent').innerHTML = `
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Nhân viên</div><div class="adm-page-sub">${staff.length} nhân viên</div></div>
-    <button class="adm-btn adm-btn-primary" onclick="toast('Thêm nhân viên...','info')">+ Thêm NV</button>
+    <div>
+      <div class="adm-page-title">Nhân viên</div>
+      <div class="adm-page-sub">${staff.length} nhân viên</div>
+    </div>
+    <div class="flex gap8">
+      <button class="adm-btn adm-btn-sec" onclick="admStaffSchedule()">📅 Xem lịch ca</button>
+      <button class="adm-btn adm-btn-primary" onclick="admStaffAdd()">+ Thêm NV</button>
+    </div>
   </div>
   <div class="adm-staff-grid mb24">
-    ${staff.map(s => `<div class="adm-staff-card">
+    ${staff.map(s => `
+    <div class="adm-staff-card">
       <div class="adm-staff-avatar" style="background:${s.color}">${s.name.split(' ').pop().charAt(0)}</div>
       <div class="adm-staff-name">${s.name}</div>
       <div class="adm-staff-role">${s.role}</div>
-      <div class="text-muted text-sm mt8">📞 ${s.phone}</div>
-      <div class="text-muted text-sm mt8">🕐 ${s.shift}</div>
+      <div class="text-muted text-sm mt8">📞 ${s.phone || '—'}</div>
+      <div class="text-muted text-sm mt8">🕐 ${s.shift || '—'}</div>
+      ${s.email ? `<div class="text-muted text-sm mt8">✉️ ${s.email}</div>` : ''}
       <div class="adm-staff-stats">
         <div style="text-align:center"><div class="adm-sval">${s.work_days}</div><div class="adm-slabel">Ngày công</div></div>
         <div style="text-align:center"><div class="adm-sval text-accent">${fmtShort(s.sales)}</div><div class="adm-slabel">Doanh số</div></div>
       </div>
+      <div class="flex gap8 mt8" style="justify-content:center">
+        <button class="adm-btn adm-btn-sec adm-btn-sm" onclick="admStaffEdit('${s.id}')">✏️ Sửa</button>
+        <button class="adm-btn adm-btn-sm" style="background:#fee2e2;color:#991b1b" onclick="admStaffDelete('${s.id}','${s.name.replace(/'/g,"\\'")}')">🗑 Xóa</button>
+      </div>
     </div>`).join('')}
   </div>`;
+}
+
+// ── Form Thêm nhân viên ──────────────────────────────────────
+async function admStaffAdd() {
+  // Lấy danh sách ca còn trống từ server
+  let shifts = [];
+  try {
+    shifts = await api('/api/staff-shifts');
+  } catch (_) {
+    shifts = STAFF_SHIFTS.map(s => ({ shift: s, occupied: false, by: null }));
+  }
+
+  const shiftOptions = shifts.map(sh =>
+    `<option value="${sh.shift}" ${sh.occupied ? 'style="color:#aaa"' : ''}>
+      ${sh.shift}${sh.occupied ? ` (đã có: ${sh.by})` : ' ✅'}
+    </option>`
+  ).join('');
+
+  document.getElementById('admModalTitle').textContent = '👔 Thêm nhân viên';
+  document.getElementById('admModalBody').innerHTML = `
+    <div class="adm-form-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Họ tên *</label>
+        <input class="adm-input" id="sfName" placeholder="Nguyễn Thị B">
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Số điện thoại</label>
+        <input class="adm-input" id="sfPhone" placeholder="09xxxxxxxx">
+      </div>
+    </div>
+    <div class="adm-form-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Chức vụ</label>
+        <select class="adm-select" id="sfRole">
+          <option>Nhân viên</option>
+          <option>Quản trị viên</option>
+          <option>Thu ngân</option>
+          <option>Bác sĩ thú y</option>
+          <option>Groomer</option>
+        </select>
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Ca làm</label>
+        <select class="adm-select" id="sfShift">${shiftOptions}</select>
+      </div>
+    </div>
+    <div class="adm-form-group">
+      <label class="adm-label">Email (tuỳ chọn)</label>
+      <input class="adm-input" id="sfEmail" placeholder="email@example.com">
+    </div>
+    <div id="sfError" style="color:#e8521a;font-size:.82rem;margin-top:8px;display:none"></div>
+  `;
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+    <button class="adm-btn adm-btn-primary" onclick="admStaffSaveNew()">💾 Thêm nhân viên</button>
+  `;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+
+async function admStaffSaveNew() {
+  const name  = document.getElementById('sfName').value.trim();
+  const phone = document.getElementById('sfPhone').value.trim();
+  const role  = document.getElementById('sfRole').value;
+  const shift = document.getElementById('sfShift').value;
+  const email = document.getElementById('sfEmail').value.trim();
+  const errEl = document.getElementById('sfError');
+
+  if (!name) { errEl.textContent = 'Vui lòng nhập họ tên.'; errEl.style.display = 'block'; return; }
+
+  const res = await api('/api/staff', {
+    method: 'POST',
+    body: JSON.stringify({ name, phone, role, shift, email }),
+  });
+
+  if (!res.success) {
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  admCloseModal();
+  toast('Đã thêm nhân viên ' + name, 'success');
+  admStaff();
+}
+
+// ── Form Sửa nhân viên ───────────────────────────────────────
+async function admStaffEdit(id) {
+  const [s, shifts] = await Promise.all([
+    api('/api/staff/' + id),
+    api('/api/staff-shifts').catch(() =>
+      STAFF_SHIFTS.map(sh => ({ shift: sh, occupied: false, by: null }))
+    ),
+  ]);
+
+  const shiftOptions = shifts.map(sh =>
+    `<option value="${sh.shift}" ${sh.shift === s.shift ? 'selected' : ''} ${sh.occupied && sh.shift !== s.shift ? 'style="color:#aaa"' : ''}>
+      ${sh.shift}${sh.occupied && sh.shift !== s.shift ? ` (đã có: ${sh.by})` : sh.shift === s.shift ? ' (hiện tại)' : ' ✅'}
+    </option>`
+  ).join('');
+
+  const roleOptions = ['Nhân viên','Quản trị viên','Thu ngân','Bác sĩ thú y','Groomer'].map(r =>
+    `<option ${r === s.role ? 'selected' : ''}>${r}</option>`
+  ).join('');
+
+  document.getElementById('admModalTitle').textContent = '✏️ Sửa nhân viên';
+  document.getElementById('admModalBody').innerHTML = `
+    <div class="adm-form-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Họ tên *</label>
+        <input class="adm-input" id="sfName" value="${s.name}">
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Số điện thoại</label>
+        <input class="adm-input" id="sfPhone" value="${s.phone || ''}">
+      </div>
+    </div>
+    <div class="adm-form-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Chức vụ</label>
+        <select class="adm-select" id="sfRole">${roleOptions}</select>
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Ca làm</label>
+        <select class="adm-select" id="sfShift">${shiftOptions}</select>
+      </div>
+    </div>
+    <div class="adm-form-group">
+      <label class="adm-label">Email</label>
+      <input class="adm-input" id="sfEmail" value="${s.email || ''}">
+    </div>
+    <div id="sfError" style="color:#e8521a;font-size:.82rem;margin-top:8px;display:none"></div>
+  `;
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+    <button class="adm-btn adm-btn-primary" onclick="admStaffSaveEdit('${id}')">💾 Lưu thay đổi</button>
+  `;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+
+async function admStaffSaveEdit(id) {
+  const name  = document.getElementById('sfName').value.trim();
+  const phone = document.getElementById('sfPhone').value.trim();
+  const role  = document.getElementById('sfRole').value;
+  const shift = document.getElementById('sfShift').value;
+  const email = document.getElementById('sfEmail').value.trim();
+  const errEl = document.getElementById('sfError');
+
+  if (!name) { errEl.textContent = 'Vui lòng nhập họ tên.'; errEl.style.display = 'block'; return; }
+
+  const res = await api('/api/staff/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ name, phone, role, shift, email }),
+  });
+
+  if (!res.success) {
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  admCloseModal();
+  toast('Đã cập nhật ' + name, 'success');
+  admStaff();
+}
+
+// ── Xóa nhân viên ───────────────────────────────────────────
+function admStaffDelete(id, name) {
+  document.getElementById('admModalTitle').textContent = '🗑 Xác nhận xóa';
+  document.getElementById('admModalBody').innerHTML = `
+    <p style="margin:0 0 12px">Bạn có chắc muốn xóa nhân viên <strong>${name}</strong>?</p>
+    <p style="color:#6b7280;font-size:.85rem">Thao tác này không thể hoàn tác.</p>
+  `;
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+    <button class="adm-btn adm-btn-sm" style="background:#e8521a;color:#fff;padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700"
+      onclick="admStaffConfirmDelete('${id}','${name.replace(/'/g,"\\'")}')">Xóa nhân viên</button>
+  `;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+
+async function admStaffConfirmDelete(id, name) {
+  const res = await api('/api/staff/' + id, { method: 'DELETE' });
+  admCloseModal();
+  if (res.success) {
+    toast('Đã xóa nhân viên ' + name, 'success');
+    admStaff();
+  } else {
+    toast(res.message, 'error');
+  }
+}
+
+// ── Xem lịch ca ─────────────────────────────────────────────
+async function admStaffSchedule() {
+  const [staff, shifts] = await Promise.all([
+    api('/api/staff'),
+    api('/api/staff-shifts').catch(() => []),
+  ]);
+
+  // Tạo bảng timeline từ 7h → 22h
+  const hours = Array.from({ length: 16 }, (_, i) => i + 7); // 7..22
+
+  const rows = shifts.map(sh => {
+    const [start, end] = sh.shift.match(/(\d+)h.*?(\d+)h/)
+      ? [parseInt(RegExp.$1), parseInt(RegExp.$2)]
+      : [null, null];
+
+    const assignedStaff = staff.filter(s => s.shift === sh.shift);
+
+    const cells = hours.map(h => {
+      const active = start !== null && h >= start && h < end;
+      const names  = active ? assignedStaff.map(s => s.name).join(', ') : '';
+      return `<td style="
+        background:${active ? (assignedStaff[0]?.color || 'var(--accent)') : 'transparent'};
+        opacity:${active ? 0.85 : 1};
+        color:${active ? '#fff' : 'transparent'};
+        font-size:.65rem;text-align:center;padding:4px 2px;border-radius:4px;
+        title='${names}'">${active && names ? names.split(' ').pop() : ''}</td>`;
+    }).join('');
+
+    return `<tr>
+      <td style="font-size:.78rem;padding:4px 8px;white-space:nowrap;font-weight:600">${sh.shift}</td>
+      ${cells}
+      <td style="font-size:.75rem;padding:4px 8px;color:${sh.occupied ? 'var(--accent)' : 'var(--teal)'}">
+        ${sh.occupied ? sh.by : '✅ Trống'}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const hourHeaders = hours.map(h => `<th style="font-size:.7rem;text-align:center;padding:4px 2px;color:var(--text3)">${h}h</th>`).join('');
+
+  document.getElementById('admModalTitle').textContent = '📅 Lịch ca làm việc';
+  document.getElementById('admModalBody').innerHTML = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:separate;border-spacing:0 4px">
+        <thead>
+          <tr>
+            <th style="text-align:left;font-size:.78rem;padding:4px 8px;color:var(--text3)">Ca làm</th>
+            ${hourHeaders}
+            <th style="font-size:.78rem;padding:4px 8px;color:var(--text3)">Phân công</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:.75rem;color:var(--text3)">
+      💡 Màu thanh tương ứng màu nhân viên được phân ca. Ca trống = chưa có ai.
+    </div>
+  `;
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Đóng</button>
+    <button class="adm-btn adm-btn-primary" onclick="admCloseModal();admStaffAdd()">+ Thêm NV vào ca trống</button>
+  `;
+  document.getElementById('admModalOverlay').classList.add('open');
 }
 
 // REPORTS
