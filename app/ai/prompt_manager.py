@@ -1,9 +1,4 @@
 # app/ai/prompt_manager.py
-"""
-Quản lý tất cả prompt template cho AI features.
-Tách riêng để dễ chỉnh sửa nội dung mà không đụng logic.
-"""
-
 
 def get_service_advisor_prompt(species: str, age: str, weight: str, issue: str) -> str:
     """Prompt cho chức năng tư vấn dịch vụ."""
