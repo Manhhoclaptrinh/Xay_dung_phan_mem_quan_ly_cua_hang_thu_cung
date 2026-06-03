@@ -1,4 +1,5 @@
-// ── NAVIGATION ─────────────────────────────────────────────────────────────
+// NAVIGATION
+
 let admPage = 'dashboard';
 const admLabels = {
   dashboard: 'Dashboard', pets: 'Hồ sơ Thú cưng', customers: 'Khách hàng',
@@ -42,7 +43,7 @@ async function admRender() {
   await (pages[admPage] || admDashboard)();
 }
 
-// ── API HELPERS ────────────────────────────────────────────────────────────
+// API HELPERS
 async function api(path, opts = {}) {
   const res = await fetch('/admin' + path, {
     headers: { 'Content-Type': 'application/json' },
@@ -51,7 +52,7 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
-// ── DASHBOARD ──────────────────────────────────────────────────────────────
+// DASHBOARD
 async function admDashboard() {
   const d = await api('/api/dashboard');
   const rev = d.monthly_revenue;
@@ -107,36 +108,318 @@ async function admDashboard() {
   </div>`;
 }
 
-// ── PETS ──────────────────────────────────────────────────────────────────
-async function admPets() {
-  const pets = await api('/api/pets');
+// PETS 
+async function admPets(search = '') {
+
+  const pets = await api(`/api/pets?search=${search}`);
+
   document.getElementById('admContent').innerHTML = `
   <div class="adm-page-header">
-    <div><div class="adm-page-title">Hồ sơ Thú cưng</div><div class="adm-page-sub">${pets.length} thú cưng đang quản lý</div></div>
-    <button class="adm-btn adm-btn-primary" onclick="admShowModal('addPet')">+ Thêm hồ sơ</button>
-  </div>
-  <div class="adm-card" style="padding:0">
-    <div class="adm-table-wrap">
-      <table class="adm-table">
-        <thead><tr><th>ID / Chip</th><th>Thú cưng</th><th>Loài / Giống</th><th>Tuổi / Giới</th><th>Chủ nuôi</th><th>Vaccine</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-        <tbody>
-          ${pets.map(p => `<tr>
-            <td><div class="font-bold text-sm">${p.id}</div><div class="text-muted" style="font-size:.68rem">${p.chip || 'Chưa chip'}</div></td>
-            <td><div class="fxc gap8"><div style="width:34px;height:34px;border-radius:50%;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:1.1rem">${p.species === 'Chó' ? '🐶' : p.species === 'Mèo' ? '🐱' : '🐰'}</div><div><div class="font-bold">${p.name}</div>${p.allergies !== 'Không' ? `<div class="text-muted" style="font-size:.68rem">⚠️ ${p.allergies}</div>` : ''}</div></div></td>
-            <td><div>${p.species}</div><div class="text-muted text-sm">${p.breed}</div></td>
-            <td>${p.age} tuổi · ${p.gender}</td>
-            <td>${p.owner_name ? `<div class="font-bold text-sm">${p.owner_name}</div><div class="text-muted" style="font-size:.68rem">${p.owner_phone || ''}</div>` : 'N/A'}</td>
-            <td>${p.vaccines.length ? p.vaccines.map(v => `<span class="adm-tag adm-tag-blue" style="margin:2px">${v}</span>`).join('') : '<span class="adm-tag adm-tag-pink">Chưa tiêm</span>'}</td>
-            <td><span class="adm-tag adm-tag-${p.status === 'Khỏe mạnh' ? 'green' : 'orange'}">${p.status}</span></td>
-            <td><div class="flex gap6"><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Xem chi tiết ${p.name}','info')">👁</button><button class="adm-btn adm-btn-sec adm-btn-sm" onclick="toast('Chỉnh sửa ${p.name}','info')">✏️</button></div></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
+
+    <div>
+      <div class="adm-page-title">Hồ sơ Thú cưng</div>
+      <div class="adm-page-sub">
+        ${pets.length} thú cưng đang quản lý
+      </div>
     </div>
-  </div>`;
+
+    <div class="flex gap8">
+
+      <input
+        class="adm-input"
+        id="petSearch"
+        placeholder="Tìm tên, giống, mã..."
+        style="width:220px"
+        value="${search}"
+      >
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="searchPets()"
+      >
+        🔍
+      </button>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="admShowModal('addPet')"
+      >
+        + Thêm hồ sơ
+      </button>
+
+    </div>
+  </div>
+
+  <div class="adm-card" style="padding:0">
+
+    <div class="adm-table-wrap">
+
+      <table class="adm-table">
+
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Thú cưng</th>
+            <th>Loài</th>
+            <th>Tuổi</th>
+            <th>Chủ nuôi</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          ${pets.map(p => `
+          <tr>
+
+            <td>
+              <div class="font-bold">${p.id}</div>
+            </td>
+
+            <td>
+              <div class="font-bold">${p.name}</div>
+              <div class="text-muted text-sm">${p.breed}</div>
+            </td>
+
+            <td>${p.species}</td>
+
+            <td>${p.age} tuổi</td>
+
+            <td>${p.owner_name || 'N/A'}</td>
+
+            <td>
+              <span class="adm-tag adm-tag-${p.status === 'Khỏe mạnh' ? 'green' : 'orange'}">
+                ${p.status}
+              </span>
+            </td>
+
+            <td>
+
+              <div class="flex gap6">
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="viewPet('${p.id}')"
+                >
+                  👁
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-sec adm-btn-sm"
+                  onclick="editPet('${p.id}')"
+                >
+                  ✏️
+                </button>
+
+                <button
+                  class="adm-btn adm-btn-danger adm-btn-sm"
+                  onclick="deletePet('${p.id}')"
+                >
+                  🗑
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+          `).join('')}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+  `;
 }
 
-// ── CUSTOMERS ─────────────────────────────────────────────────────────────
+function searchPets() {
+
+  const keyword = document.getElementById('petSearch').value;
+
+  admPets(keyword);
+}
+
+async function viewPet(id) {
+
+  const p = await api(`/api/pets/${id}`);
+
+  document.getElementById('admModalTitle').textContent =
+    `🐾 Chi tiết ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-grid adm-g2">
+
+      <div>
+        <strong>Mã:</strong>
+        <div>${p.id}</div>
+      </div>
+
+      <div>
+        <strong>Tên:</strong>
+        <div>${p.name}</div>
+      </div>
+
+      <div>
+        <strong>Loài:</strong>
+        <div>${p.species}</div>
+      </div>
+
+      <div>
+        <strong>Giống:</strong>
+        <div>${p.breed}</div>
+      </div>
+
+      <div>
+        <strong>Tuổi:</strong>
+        <div>${p.age}</div>
+      </div>
+
+      <div>
+        <strong>Giới tính:</strong>
+        <div>${p.gender}</div>
+      </div>
+
+      <div>
+        <strong>Chủ nuôi:</strong>
+        <div>${p.owner_name || 'N/A'}</div>
+      </div>
+
+      <div>
+        <strong>Chip:</strong>
+        <div>${p.chip || 'Không có'}</div>
+      </div>
+
+      <div>
+        <strong>Dị ứng:</strong>
+        <div>${p.allergies || 'Không'}</div>
+      </div>
+
+      <div>
+        <strong>Trạng thái:</strong>
+        <div>${p.status}</div>
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()"
+    >
+      Đóng
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function editPet(id) {
+
+  const p = await api(`/api/pets/${id}`);
+
+  document.getElementById('admModalTitle').textContent =
+    `✏️ Chỉnh sửa ${p.name}`;
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Tên</label>
+        <input class="adm-input" id="ePetName" value="${p.name}">
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Loài</label>
+        <input class="adm-input" id="ePetSpecies" value="${p.species}">
+      </div>
+
+    </div>
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+        <label class="adm-label">Giống</label>
+        <input class="adm-input" id="ePetBreed" value="${p.breed}">
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Tuổi</label>
+        <input class="adm-input" type="number" id="ePetAge" value="${p.age}">
+      </div>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="updatePet('${p.id}')"
+    >
+      💾 Lưu
+    </button>
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+
+async function updatePet(id) {
+
+  const payload = {
+
+    name: document.getElementById('ePetName').value,
+
+    species: document.getElementById('ePetSpecies').value,
+
+    breed: document.getElementById('ePetBreed').value,
+
+    age: document.getElementById('ePetAge').value,
+  };
+
+  const d = await api(`/api/pets/${id}`, {
+
+    method: 'PUT',
+
+    body: JSON.stringify(payload)
+  });
+
+  admCloseModal();
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+async function deletePet(id) {
+
+  if (!confirm('Bạn có chắc muốn xóa thú cưng này?')) {
+    return;
+  }
+
+  const d = await api(`/api/pets/${id}`, {
+
+    method: 'DELETE'
+  });
+
+  toast(d.message, 'success');
+
+  admRender();
+}
+
+// CUSTOMERS 
 async function admCustomers() {
   const customers = await api('/api/customers');
   document.getElementById('admContent').innerHTML = `
@@ -171,7 +454,7 @@ async function admCustomers() {
   </div>`;
 }
 
-// ── INVENTORY ─────────────────────────────────────────────────────────────
+// INVENTORY
 async function admInventory() {
   const items = await api('/api/inventory');
   const alerts = items.filter(i => i.status !== 'OK');
@@ -211,7 +494,7 @@ async function admInventory() {
   </div>`;
 }
 
-// ── APPOINTMENTS ──────────────────────────────────────────────────────────
+// APPOINTMENTS 
 async function admAppointments() {
   const apts = await api('/api/appointments');
   document.getElementById('admContent').innerHTML = `
@@ -253,36 +536,324 @@ async function cancelApt(id) {
   admRender();
 }
 
-// ── BOARDING ──────────────────────────────────────────────────────────────
-async function admBoarding() {
-  const rooms = await api('/api/rooms');
-  const occupied = rooms.filter(r => r.status === 'occupied').length;
-  const available = rooms.filter(r => r.status === 'available').length;
-  const cleaning = rooms.filter(r => r.status === 'cleaning').length;
-  document.getElementById('admContent').innerHTML = `
-  <div class="adm-page-header">
-    <div><div class="adm-page-title">Lưu trú (Pet Hotel)</div><div class="adm-page-sub">${occupied}/${rooms.length} phòng có khách</div></div>
-    <button class="adm-btn adm-btn-primary" onclick="toast('Mở form nhận phòng...','info')">+ Nhận phòng</button>
-  </div>
-  <div class="adm-grid adm-g4 mb24">
-    <div class="adm-stat" style="--sc:var(--pink)"><div class="adm-stat-icon">🏠</div><div class="adm-stat-val">${occupied}</div><div class="adm-stat-label">Đang có khách</div></div>
-    <div class="adm-stat" style="--sc:var(--teal)"><div class="adm-stat-icon">✅</div><div class="adm-stat-val">${available}</div><div class="adm-stat-label">Phòng trống</div></div>
-    <div class="adm-stat" style="--sc:var(--gold)"><div class="adm-stat-icon">🧹</div><div class="adm-stat-val">${cleaning}</div><div class="adm-stat-label">Đang vệ sinh</div></div>
-    <div class="adm-stat" style="--sc:var(--accent)"><div class="adm-stat-icon">💰</div><div class="adm-stat-val">760K</div><div class="adm-stat-label">Đang phát sinh</div></div>
-  </div>
-  <div class="adm-card">
-    <div class="adm-card-title">Sơ đồ phòng</div>
-    <div class="adm-room-grid">
-      ${rooms.map(r => `<div class="adm-room ${r.status}" onclick="toast('Phòng ${r.id}: ${r.room_type}','info')">
-        <div class="adm-room-icon">${r.status === 'occupied' ? '🐾' : r.status === 'cleaning' ? '🧹' : '🏠'}</div>
-        <div class="adm-room-id">${r.id}</div>
-        <div class="adm-room-status">${r.status === 'occupied' ? 'Có khách' : r.status === 'available' ? 'Trống' : 'Đang dọn'}</div>
-      </div>`).join('')}
-    </div>
-  </div>`;
-}
+// BOARDING
+// BOARDING (PET HOTEL)
 
-// ── POS ───────────────────────────────────────────────────────────────────
+async function admBoarding() {
+
+  const rooms = await api('/api/rooms');
+
+  const occupied =
+    rooms.filter(r => r.status === 'occupied').length;
+
+  const available =
+    rooms.filter(r => r.status === 'available').length;
+
+  const cleaning =
+    rooms.filter(r => r.status === 'cleaning').length;
+
+  const occupancyRate =
+    rooms.length > 0
+      ? Math.round((occupied / rooms.length) * 100)
+      : 0;
+
+  document.getElementById('admContent').innerHTML = `
+
+  <!-- HEADER -->
+
+  <div class="adm-page-header">
+
+    <div>
+
+      <div class="adm-page-title">
+        🏨 Quản lý lưu trú thú cưng
+      </div>
+
+      <div class="adm-page-sub">
+        Quản lý phòng khách sạn thú cưng
+      </div>
+
+    </div>
+
+    <div class="flex gap8">
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="admBoarding()">
+
+        🔄 Làm mới
+
+      </button>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="openCheckinModal()">
+
+        🏠 Nhận phòng
+
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- THỐNG KÊ -->
+
+  <div class="adm-grid adm-g4 mb24">
+
+    <div class="adm-stat" style="--sc:var(--pink)">
+
+      <div class="adm-stat-icon">
+        🐾
+      </div>
+
+      <div class="adm-stat-val">
+        ${occupied}
+      </div>
+
+      <div class="adm-stat-label">
+        Đang có khách
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--teal)">
+
+      <div class="adm-stat-icon">
+        🏠
+      </div>
+
+      <div class="adm-stat-val">
+        ${available}
+      </div>
+
+      <div class="adm-stat-label">
+        Phòng trống
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--gold)">
+
+      <div class="adm-stat-icon">
+        🧹
+      </div>
+
+      <div class="adm-stat-val">
+        ${cleaning}
+      </div>
+
+      <div class="adm-stat-label">
+        Đang vệ sinh
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--accent)">
+
+      <div class="adm-stat-icon">
+        📊
+      </div>
+
+      <div class="adm-stat-val">
+        ${occupancyRate}%
+      </div>
+
+      <div class="adm-stat-label">
+        Tỷ lệ lấp đầy
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TỔNG QUAN -->
+
+  <div class="adm-card mb24">
+
+    <div class="adm-card-title">
+      Tổng quan lưu trú
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Số phòng hiện có
+      </span>
+
+      <strong>
+        ${rooms.length}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Đang sử dụng
+      </span>
+
+      <strong class="text-pink">
+        ${occupied}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Phòng trống
+      </span>
+
+      <strong class="text-teal">
+        ${available}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Đang vệ sinh
+      </span>
+
+      <strong class="text-gold">
+        ${cleaning}
+      </strong>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="fxb mb8">
+
+      <span class="text-sm text-muted">
+        Tỷ lệ sử dụng
+      </span>
+
+      <strong>
+        ${occupancyRate}%
+      </strong>
+
+    </div>
+
+    <div class="adm-progress">
+
+      <div
+        class="adm-progress-fill"
+        style="width:${occupancyRate}%">
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- DANH SÁCH PHÒNG -->
+
+  <div class="adm-card">
+
+    <div class="fxb mb16">
+
+      <div class="adm-card-title">
+
+        Sơ đồ phòng lưu trú
+
+      </div>
+
+      <span class="adm-tag adm-tag-blue">
+
+        ${rooms.length} phòng
+
+      </span>
+
+    </div>
+
+    <div class="adm-room-grid">
+
+      ${rooms.map(room => {
+
+        let roomText = '';
+        let roomIcon = '';
+        let tagColor = '';
+
+        if (room.status === 'occupied') {
+
+          roomText = 'Có khách';
+          roomIcon = '🐾';
+          tagColor = 'green';
+
+        }
+
+        else if (room.status === 'available') {
+
+          roomText = 'Trống';
+          roomIcon = '🏠';
+          tagColor = 'blue';
+
+        }
+
+        else {
+
+          roomText = 'Đang dọn';
+          roomIcon = '🧹';
+          tagColor = 'gold';
+
+        }
+
+        return `
+
+        <div
+          class="adm-room ${room.status}"
+          onclick="showRoomInfo('${room.id}')"
+          style="cursor:pointer">
+
+          <div class="adm-room-icon">
+
+            ${roomIcon}
+
+          </div>
+
+          <div
+            class="adm-room-id"
+            style="font-size:18px;font-weight:800">
+
+            ${room.id}
+
+          </div>
+
+          <div class="adm-room-status">
+
+            <span class="adm-tag adm-tag-${tagColor}">
+              ${roomText}
+            </span>
+
+          </div>
+
+          <div
+            style="
+              margin-top:10px;
+              font-size:12px;
+              color:var(--text3);
+            ">
+
+            ${room.room_type || 'Phòng tiêu chuẩn'}
+
+          </div>
+
+        </div>
+
+        `;
+
+      }).join('')}
+
+    </div>
+
+  </div>
+
+  `;
+}
+// POS 
 const posItems = [
   {id:'ps1',name:'Hạt Royal Canin',icon:'🎁',price:320000},
   {id:'ps2',name:'Pate Whiskas',icon:'🐟',price:25000},
@@ -349,7 +920,7 @@ function admUpdateCart() {
   el.innerHTML = admCart.length === 0 ? '<div class="text-muted text-sm" style="text-align:center;padding:30px 0">Chưa có sản phẩm</div>' : admCart.map(admCartItemHtml).join('');
 }
 
-// ── ORDERS ────────────────────────────────────────────────────────────────
+// ORDERS 
 async function admOrders() {
   const orders = await api('/api/orders');
   document.getElementById('admContent').innerHTML = `
@@ -382,7 +953,7 @@ async function confirmOrder(id) {
   admRender();
 }
 
-// ── PROMOTIONS ────────────────────────────────────────────────────────────
+// PROMOTIONS 
 async function admPromotions() {
   const promos = await api('/api/promotions');
   document.getElementById('admContent').innerHTML = `
@@ -407,8 +978,8 @@ async function deletePromo(id) {
   admRender();
 }
 
-// ── VENDORS ───────────────────────────────────────────────────────────────
-async function admVendors() {
+  // VENDORS
+  async function admVendors() {
   const vendors = await api('/api/vendors');
   const totalDebt = vendors.reduce((s, v) => s + v.debt, 0);
   document.getElementById('admContent').innerHTML = `
@@ -427,7 +998,7 @@ async function admVendors() {
   </div>`;
 }
 
-// ── STAFF ─────────────────────────────────────────────────────────────────
+// STAFF 
 async function admStaff() {
   const staff = await api('/api/staff');
   document.getElementById('admContent').innerHTML = `
@@ -450,7 +1021,7 @@ async function admStaff() {
   </div>`;
 }
 
-// ── REPORTS ───────────────────────────────────────────────────────────────
+// REPORTS
 async function admReports() {
   const [dash, staff] = await Promise.all([api('/api/dashboard'), api('/api/staff')]);
   const rev = dash.monthly_revenue;
@@ -491,7 +1062,7 @@ async function admReports() {
   </div>`;
 }
 
-// ── ADMIN MODAL ───────────────────────────────────────────────────────────
+// ADMIN MODAL 
 function admShowModal(type) {
   const cfg = {
     addPet: {
@@ -575,4 +1146,244 @@ async function savePromotion() {
   admCloseModal();
   toast(d.message, 'success');
   admRender();
+}
+async function openCheckinModal() {
+
+  const rooms = await api('/api/rooms');
+  const pets  = await api('/api/pets');
+
+  const availableRooms =
+    rooms.filter(r => r.status === 'available');
+
+  document.getElementById('admModalTitle').textContent =
+    '🏠 Nhận phòng lưu trú';
+
+  document.getElementById('admModalBody').innerHTML = `
+
+    <div class="adm-form-row">
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Chọn phòng
+        </label>
+
+        <select class="adm-select" id="checkinRoom">
+
+          ${availableRooms.map(r => `
+            <option value="${r.id}">
+              ${r.id}
+            </option>
+          `).join('')}
+
+        </select>
+
+      </div>
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Ngày nhận
+        </label>
+
+        <input
+          type="datetime-local"
+          class="adm-input"
+          id="checkinDate">
+
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Chọn thú cưng
+      </label>
+
+      <select
+        class="adm-select"
+        id="checkinPet"
+        onchange="fillOwnerInfo()">
+
+        <option value="">
+          -- Chọn thú cưng --
+        </option>
+
+        ${pets.map(p => `
+          <option
+            value="${p.id}"
+            data-owner="${p.owner_name || ''}">
+            ${p.name} (${p.id})
+          </option>
+        `).join('')}
+
+      </select>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Chủ nuôi
+      </label>
+
+      <input
+        class="adm-input"
+        id="ownerName"
+        readonly>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()">
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="confirmCheckin()">
+      🏠 Xác nhận nhận phòng
+    </button>
+
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
+}
+async function confirmCheckin() {
+
+  const room =
+    document.getElementById('checkinRoom').value;
+
+  const petId =
+    document.getElementById('checkinPet').value;
+
+  const date =
+    document.getElementById('checkinDate').value;
+
+  if (!room) {
+
+    toast(
+      'Vui lòng chọn phòng',
+      'error'
+    );
+
+    return;
+  }
+
+  if (!petId) {
+
+    toast(
+      'Vui lòng chọn thú cưng',
+      'error'
+    );
+
+    return;
+  }
+
+  if (!date) {
+
+    toast(
+      'Vui lòng chọn ngày nhận',
+      'error'
+    );
+
+    return;
+  }
+
+  try {
+
+    const roomInfo =
+      await api('/api/rooms');
+
+    const currentRoom =
+      roomInfo.find(r => r.id === room);
+
+    if (
+      currentRoom &&
+      currentRoom.status === 'occupied'
+    ) {
+
+      toast(
+        'Phòng đã có khách',
+        'error'
+      );
+
+      return;
+    }
+
+    const result =
+      await api(`/api/rooms/${room}`, {
+
+        method: 'PATCH',
+
+        body: JSON.stringify({
+        status: 'occupied',
+        pet_id: petId,
+        checkin_date: date
+      })
+
+      });
+
+    admCloseModal();
+
+    toast(
+      result.message ||
+      'Nhận phòng thành công',
+      'success'
+    );
+
+    admBoarding();
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast(
+      'Lỗi nhận phòng',
+      'error'
+    );
+
+  }
+}
+function fillOwnerInfo() {
+
+  const petSelect =
+    document.getElementById('checkinPet');
+
+  const owner =
+    petSelect.options[
+      petSelect.selectedIndex
+    ].dataset.owner || '';
+
+  document.getElementById('ownerName').value =
+    owner;
+}
+async function checkoutRoom(roomId) {
+
+  const result =
+    await api(`/api/rooms/${roomId}`, {
+
+      method: 'PATCH',
+
+      body: JSON.stringify({
+        status: 'available'
+      })
+
+    });
+
+  admCloseModal();
+
+  toast(
+    result.message || 'Trả phòng thành công',
+    'success'
+  );
+
+  admBoarding();
 }

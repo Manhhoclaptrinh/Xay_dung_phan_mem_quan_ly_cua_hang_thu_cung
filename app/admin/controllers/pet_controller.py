@@ -7,7 +7,7 @@ import random
 pet_bp = Blueprint('pet_api', __name__)
 
 # GET ALL
-@pet_bp.route('/admin/api/pets', methods=['GET'])
+@pet_bp.route('/api/pets', methods=['GET'])
 def get_pets():
 
     pets = Pet.query.all()
@@ -39,7 +39,7 @@ def get_pets():
 
 
 # CREATE
-@pet_bp.route('/admin/api/pets', methods=['POST'])
+@pet_bp.route('/api/pets', methods=['POST'])
 def create_pet():
 
     data = request.get_json()
@@ -80,7 +80,7 @@ def create_pet():
     })
 
 # UPDATE
-@pet_bp.route('/admin/api/pets/<string:pet_id>', methods=['PUT'])
+@pet_bp.route('/api/pets/<string:pet_id>', methods=['PUT'])
 def update_pet(pet_id):
 
     pet = Pet.query.get_or_404(pet_id)
@@ -100,7 +100,7 @@ def update_pet(pet_id):
 
 
 # DELETE
-@pet_bp.route('/admin/api/pets/<string:pet_id>', methods=['DELETE'])
+@pet_bp.route('/api/pets/<string:pet_id>', methods=['DELETE'])
 def delete_pet(pet_id):
 
     pet = Pet.query.get_or_404(pet_id)

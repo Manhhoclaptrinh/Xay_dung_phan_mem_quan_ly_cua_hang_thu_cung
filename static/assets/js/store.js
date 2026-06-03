@@ -284,26 +284,139 @@ function closeModal() {
 }
 
 async function submitModal() {
+
   const name  = document.getElementById('modalName').value.trim();
+
   const phone = document.getElementById('modalPhone').value.trim();
-  if (!name || !phone) { toast('Vui lòng nhập tên và số điện thoại!', 'error'); return; }
+
+  if (!name || !phone) { 
+    toast('Vui lòng nhập tên và số điện thoại!', 'error'); 
+    return; 
+  }
+
+  if (!validatePhone(phone)) {
+    toast('Số điện thoại không hợp lệ!', 'error');
+    return;
+  }
 
   const payload = {
     full_name: name,
     phone,
-    pet_name:  document.getElementById('modalPetName').value.trim(),
-    service:   modalService,
-    date:      document.getElementById('modalDate').value,
-    notes:     document.getElementById('modalNotes').value.trim(),
+    pet_name: document.getElementById('modalPetName').value.trim(),
+    service: modalService,
+    date: document.getElementById('modalDate').value,
+    notes: document.getElementById('modalNotes').value.trim(),
   };
 
-  const res  = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const res = await fetch('/api/booking', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
   const data = await res.json();
+
   closeModal();
+
   toast(data.message, data.ok ? 'success' : 'error');
 }
 
 // Close modal on overlay click
-document.getElementById('bookingModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('bookingModal')) closeModal();
-});
+// Close modal on overlay click
+const bookingModal = document.getElementById('bookingModal');
+
+if (bookingModal) {
+
+  bookingModal.addEventListener('click', e => {
+
+    if (e.target === bookingModal) {
+      closeModal();
+    }
+
+  });
+
+}
+function openCheckinModal() {
+    const modal = document.getElementById("checkinModal");
+    if (!modal) {
+        console.error('❌ Modal element not found!');
+        return;
+    }
+    console.log('✅ Opening checkin modal', modal);
+    modal.classList.add("open");
+}
+
+function closeCheckinModal() {
+
+    const modal = document.getElementById("checkinModal");
+
+    modal.classList.remove("open");
+}
+const checkinModal = document.getElementById('checkinModal');
+
+if (checkinModal) {
+
+  checkinModal.addEventListener('click', e => {
+
+    if (e.target === checkinModal) {
+      closeCheckinModal();
+    }
+
+  });
+
+}
+function submitCheckin() {
+
+  const customer = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+  const pet = document.getElementById('petName').value.trim();
+  const room = document.getElementById('roomSelect').value;
+  const checkinDate = document.getElementById('checkinDate').value;
+  const checkoutDate = document.getElementById('checkoutDate').value;
+  const notes = document.getElementById('checkinNotes').value.trim();
+
+  // Validation
+  if (!customer || !phone || !pet) {
+    toast('Vui lòng nhập đầy đủ thông tin!', 'error');
+    return;
+  }
+
+  if (!validatePhone(phone)) {
+    toast('Số điện thoại không hợp lệ!', 'error');
+    return;
+  }
+
+  if (!checkinDate || !checkoutDate) {
+    toast('Vui lòng chọn ngày nhận và ngày trả!', 'error');
+    return;
+  }
+
+  // Format dates for display
+  const checkinFormatted = new Date(checkinDate).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const checkoutFormatted = new Date(checkoutDate).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+  // Send to server (optional - if you have API endpoint)
+  // const payload = {
+  //   full_name: customer,
+  //   phone,
+  //   pet_name: pet,
+  //   room,
+  //   checkin_date: checkinDate,
+  //   checkout_date: checkoutDate,
+  //   notes
+  // };
+  // fetch('/api/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+
+  toast(`✅ Đã nhận phòng ${room} cho bé ${pet}\nNhận: ${checkinFormatted}\nTrả: ${checkoutFormatted}`, 'success');
+
+  // Reset form
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('petName').value = '';
+  document.getElementById('roomSelect').value = 'R01';
+  document.getElementById('checkinDate').value = '';
+  document.getElementById('checkoutDate').value = '';
+  document.getElementById('checkinNotes').value = '';
+
+  closeCheckinModal();
+}

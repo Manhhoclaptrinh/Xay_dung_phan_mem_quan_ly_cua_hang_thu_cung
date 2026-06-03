@@ -135,6 +135,52 @@
   </div>
 </section>
 
+<!-- PET HOTEL -->
+<section class="section" id="hotel">
+
+  <div class="section-header">
+    <div class="section-badge">Lưu trú</div>
+    <h2 class="section-title">Hệ thống phòng thú cưng</h2>
+    <p class="section-sub">
+      Theo dõi trạng thái phòng và nhận phòng nhanh
+    </p>
+  </div>
+
+  <div class="hotel-top">
+    <button class="btn-checkin-room" onclick="openCheckinModal()">
+      + Nhận phòng
+    </button>
+  </div>
+
+  <div class="room-grid">
+
+    <div class="room-card empty">
+      <div class="room-icon">🏠</div>
+      <div class="room-name">R01</div>
+      <div class="room-status">Trống</div>
+    </div>
+
+    <div class="room-card busy">
+      <div class="room-icon">🐶</div>
+      <div class="room-name">R02</div>
+      <div class="room-status">Đang ở</div>
+    </div>
+
+    <div class="room-card cleaning">
+      <div class="room-icon">🧹</div>
+      <div class="room-name">R03</div>
+      <div class="room-status">Đang dọn</div>
+    </div>
+
+    <div class="room-card empty">
+      <div class="room-icon">🏠</div>
+      <div class="room-name">R04</div>
+      <div class="room-status">Trống</div>
+    </div>
+
+  </div>
+
+</section>
 <!-- PETS FOR ADOPTION -->
 <section class="section" id="pets">
   <div class="section-header">
@@ -350,7 +396,87 @@
     <button class="btn-submit" onclick="submitModal()">📅 Xác nhận đặt lịch</button>
   </div>
 </div>
+<!-- CHECKIN MODAL -->
+<div class="modal-overlay" id="checkinModal">
 
+  <div class="modal-box">
+
+    <div style="overflow:auto">
+      <button class="modal-close-btn" onclick="closeCheckinModal()">✕</button>
+
+      <div class="modal-title">
+        🏨 Nhận phòng lưu trú
+      </div>
+
+      <div class="modal-sub">
+        Nhập thông tin khách hàng
+      </div>
+    </div>
+
+    <div class="form-row">
+
+      <div class="form-group">
+        <label class="form-label">Tên khách hàng</label>
+        <input class="form-input" id="customerName" placeholder="Nguyễn Văn A">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Số điện thoại</label>
+        <input class="form-input" id="customerPhone" placeholder="09xxxxxxxx">
+      </div>
+
+    </div>
+
+    <div class="form-row">
+
+      <div class="form-group">
+        <label class="form-label">Tên thú cưng</label>
+        <input class="form-input" id="petName" placeholder="Bông, Milo...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Chọn phòng</label>
+
+        <select class="form-select" id="roomSelect">
+          <option value="R01">R01</option>
+          <option value="R02">R02</option>
+          <option value="R03">R03</option>
+          <option value="R04">R04</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="form-row">
+
+      <div class="form-group">
+        <label class="form-label">Ngày nhận</label>
+        <input type="datetime-local" class="form-input" id="checkinDate">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ngày trả</label>
+        <input type="datetime-local" class="form-input" id="checkoutDate">
+      </div>
+
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Ghi chú</label>
+      <textarea 
+        class="form-textarea" 
+        id="checkinNotes"
+        placeholder="Thông tin thêm về thú cưng..."
+      ></textarea>
+    </div>
+
+    <button class="btn-submit" onclick="submitCheckin()">
+      🏨 Xác nhận nhận phòng
+    </button>
+
+  </div>
+
+</div>
 </div>
 {% endblock %}
 
