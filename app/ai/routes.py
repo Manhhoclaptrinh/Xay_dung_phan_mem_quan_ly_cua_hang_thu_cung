@@ -30,7 +30,6 @@ def api_service_advisor():
 def api_chatbot():
     """
     Chatbot chăm sóc thú cưng.
-    Body JSON: {question, history: [{role, content}]}
     """
     data     = request.get_json(force=True) or {}
     question = data.get('question', '').strip()
