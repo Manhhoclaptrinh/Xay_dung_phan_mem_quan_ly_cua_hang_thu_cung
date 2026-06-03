@@ -280,42 +280,56 @@ def api_add_appointment():
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã đặt lịch thành công!'})
 
-
-# ROOMS / BOARDING
+# ROOMS / BOARDING (QUẢN LÝ LƯU TRÚ)
 @admin_bp.route('/api/rooms')
 def api_rooms():
-
     rooms = Room.query.all()
+    return jsonify([r.to_dict() for r in rooms])
 
-    return jsonify([
-        r.to_dict()
-        for r in rooms
-    ])
 
-@admin_bp.route('/api/rooms/<string:room_id>', methods=['PATCH'])
-def api_update_room(room_id):
-
+@admin_bp.route('/api/rooms/<string:room_id>', methods=['GET'])
+def api_room_detail(room_id):
     room = Room.query.get_or_404(room_id)
+    data = room.to_dict()
+    
+    if room.status == 'occupied' and hasattr(room, 'pet') and room.pet:
+        data['pet_name'] = room.pet.name
+        data['notes'] = room.notes if hasattr(room, 'notes') else 'Không có'
+        data['checkin_date'] = room.checkin_date if hasattr(room, 'checkin_date') else '—'
+        if room.pet.owner:
+            data['owner_name'] = room.pet.owner.name
+            data['owner_phone'] = room.pet.owner.phone
+            
+    return jsonify(data)
 
+
+@admin_bp.route('/api/rooms/<string:room_id>/checkout', methods=['PUT'])
+def api_checkout_room(room_id):
+    room = Room.query.get_or_404(room_id)
+    room.status = 'cleaning'
+    if hasattr(room, 'pet_id'):
+        room.pet_id = None 
+    db.session.commit()
+    return jsonify({'ok': True, 'message': f'Đã trả phòng {room_id} thành công!'})
+
+
+@admin_bp.route('/api/rooms/<string:room_id>/clean', methods=['PUT'])
+def api_finish_cleaning(room_id):
+    room = Room.query.get_or_404(room_id)
+    room.status = 'available'
+    db.session.commit()
+    return jsonify({'ok': True, 'message': f'Phòng {room_id} đã dọn dẹp sạch sẽ!'})
+
+
+@admin_bp.route('/api/rooms/<string:room_id>', methods=['PATCH', 'PUT'])
+def api_update_room(room_id):
+    room = Room.query.get_or_404(room_id)
     data = request.get_json(force=True)
-
-    room.status = data.get(
-        'status',
-        room.status
-    )
-
+    room.status = data.get('status', room.status)
     if 'pet_id' in data:
         room.pet_id = data['pet_id']
-
     db.session.commit()
-
-    return jsonify({
-        'ok': True,
-        'message': 'Nhận phòng thành công!',
-        'room': room.to_dict()
-    })
-
-
+    return jsonify({'ok': True, 'message': 'Nhận phòng thành công!', 'room': room.to_dict()})
 # STAFF
 @admin_bp.route('/api/staff')
 def api_staff():
