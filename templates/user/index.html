@@ -820,6 +820,227 @@
 </div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════
+     AI WIDGET — Tư vấn & Chatbot thú cưng (THÊM MỚI)
+     Floating button góc phải dưới
+═══════════════════════════════════════════════════ -->
+<div id="pawAiRoot">
+
+  <!-- Floating button -->
+  <button id="pawAiBtn" onclick="pawAiToggle()" title="AI tư vấn thú cưng" style="
+    position:fixed;bottom:28px;right:28px;z-index:9999;
+    width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#e8521a,#f5a06e);
+    box-shadow:0 4px 20px rgba(232,82,26,.45);
+    font-size:1.5rem;display:flex;align-items:center;justify-content:center;
+    transition:transform .2s">🐾</button>
+
+  <!-- Main panel -->
+  <div id="pawAiPanel" style="
+    display:none;position:fixed;bottom:98px;right:28px;z-index:9998;
+    width:370px;max-height:600px;
+    background:#fff;border-radius:20px;
+    box-shadow:0 12px 48px rgba(0,0,0,.18);
+    border:1px solid #f0ece8;
+    display:none;flex-direction:column;overflow:hidden">
+
+    <!-- Header tabs -->
+    <div style="background:linear-gradient(135deg,#e8521a,#f5a06e);padding:16px 18px 0">
+      <div style="color:#fff;font-weight:800;font-size:1rem;margin-bottom:10px">🐾 PawStore AI</div>
+      <div style="display:flex;gap:4px">
+        <button id="tabAdvisor" onclick="pawAiTab('advisor')" style="
+          flex:1;padding:7px;border:none;cursor:pointer;border-radius:8px 8px 0 0;
+          background:rgba(255,255,255,.25);color:#fff;font-weight:700;font-size:.8rem">
+          🩺 Tư vấn dịch vụ
+        </button>
+        <button id="tabChatbot" onclick="pawAiTab('chatbot')" style="
+          flex:1;padding:7px;border:none;cursor:pointer;border-radius:8px 8px 0 0;
+          background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-weight:600;font-size:.8rem">
+          💬 Chatbot
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Tab 1: Service Advisor ── -->
+    <div id="panelAdvisor" style="padding:16px;overflow-y:auto;flex:1">
+      <p style="font-size:.8rem;color:#6b7280;margin:0 0 12px">Nhập thông tin thú cưng để nhận tư vấn dịch vụ phù hợp.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:.75rem;font-weight:600;color:#374151">Loài *</label>
+          <input id="aiSpecies" placeholder="VD: Chó, Mèo..." style="
+            width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;
+            font-size:.82rem;box-sizing:border-box;margin-top:3px">
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:600;color:#374151">Tuổi</label>
+          <input id="aiAge" placeholder="VD: 2 tuổi" style="
+            width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;
+            font-size:.82rem;box-sizing:border-box;margin-top:3px">
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:.75rem;font-weight:600;color:#374151">Cân nặng</label>
+        <input id="aiWeight" placeholder="VD: 5kg" style="
+          width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;
+          font-size:.82rem;box-sizing:border-box;margin-top:3px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:.75rem;font-weight:600;color:#374151">Vấn đề / Nhu cầu *</label>
+        <textarea id="aiIssue" placeholder="VD: Rụng lông nhiều, da ngứa, cần tắm sấy..." rows="3" style="
+          width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;
+          font-size:.82rem;box-sizing:border-box;margin-top:3px;resize:none;font-family:inherit"></textarea>
+      </div>
+      <button onclick="pawAiAskAdvisor()" style="
+        width:100%;padding:9px;background:linear-gradient(135deg,#e8521a,#f5a06e);
+        color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.85rem">
+        🩺 Nhận tư vấn
+      </button>
+      <div id="advisorResult" style="margin-top:12px;display:none"></div>
+    </div>
+
+    <!-- ── Tab 2: Chatbot ── -->
+    <div id="panelChatbot" style="display:none;flex-direction:column;height:100%">
+      <div id="chatMessages" style="
+        flex:1;overflow-y:auto;padding:12px;
+        max-height:380px;min-height:200px;
+        display:flex;flex-direction:column;gap:8px">
+        <div style="
+          background:#f9f5f2;border-radius:12px 12px 12px 0;
+          padding:10px 12px;font-size:.82rem;color:#374151;max-width:85%">
+          🐾 Xin chào! Tôi là <strong>PawBot</strong>. Hỏi tôi bất cứ điều gì về chăm sóc thú cưng nhé!
+        </div>
+      </div>
+      <div style="padding:10px 12px;border-top:1px solid #f0ece8;display:flex;gap:8px">
+        <input id="chatInput" placeholder="Hỏi về thú cưng..." onkeydown="if(event.key==='Enter')pawAiSendChat()" style="
+          flex:1;padding:8px 12px;border:1px solid #e5e7eb;border-radius:20px;
+          font-size:.82rem;outline:none;font-family:inherit">
+        <button onclick="pawAiSendChat()" style="
+          width:36px;height:36px;background:linear-gradient(135deg,#e8521a,#f5a06e);
+          color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:1rem">➤</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── PawStore AI Widget ──────────────────────────────────────────
+let _pawAiOpen = false;
+let _chatHistory = [];
+
+function pawAiToggle() {
+  _pawAiOpen = !_pawAiOpen;
+  const panel = document.getElementById('pawAiPanel');
+  panel.style.display = _pawAiOpen ? 'flex' : 'none';
+  document.getElementById('pawAiBtn').style.transform = _pawAiOpen ? 'rotate(20deg)' : '';
+}
+
+function pawAiTab(tab) {
+  document.getElementById('panelAdvisor').style.display  = tab === 'advisor' ? 'block' : 'none';
+  document.getElementById('panelChatbot').style.display  = tab === 'chatbot' ? 'flex' : 'none';
+  document.getElementById('tabAdvisor').style.background = tab === 'advisor' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.1)';
+  document.getElementById('tabAdvisor').style.color      = tab === 'advisor' ? '#fff' : 'rgba(255,255,255,.8)';
+  document.getElementById('tabChatbot').style.background = tab === 'chatbot' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.1)';
+  document.getElementById('tabChatbot').style.color      = tab === 'chatbot' ? '#fff' : 'rgba(255,255,255,.8)';
+  document.getElementById('tabAdvisor').style.fontWeight = tab === 'advisor' ? '700' : '600';
+  document.getElementById('tabChatbot').style.fontWeight = tab === 'chatbot' ? '700' : '600';
+}
+
+// ── Tư vấn dịch vụ ───────────────────────────────────────────
+async function pawAiAskAdvisor() {
+  const species = document.getElementById('aiSpecies').value.trim();
+  const age     = document.getElementById('aiAge').value.trim();
+  const weight  = document.getElementById('aiWeight').value.trim();
+  const issue   = document.getElementById('aiIssue').value.trim();
+  const resultEl = document.getElementById('advisorResult');
+
+  if (!species || !issue) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<p style="color:#e8521a;font-size:.8rem">⚠️ Vui lòng nhập loài thú cưng và mô tả vấn đề.</p>';
+    return;
+  }
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="text-align:center;padding:16px;color:#9ca3af;font-size:.82rem">⏳ Đang phân tích...</div>';
+
+  try {
+    const res = await fetch('/api/ai/service-advisor', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({species, age, weight, issue})
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Render markdown-like formatting
+      const html = data.answer
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/✓/g, '<span style="color:#16a34a">✓</span>')
+        .split('\n').join('<br>');
+      resultEl.innerHTML = `
+        <div style="background:#f9f5f2;border-radius:12px;padding:12px;font-size:.8rem;line-height:1.6;color:#374151">
+          ${html}
+        </div>
+        <button onclick="document.getElementById('advisorResult').style.display='none'"
+          style="margin-top:8px;font-size:.72rem;color:#9ca3af;background:none;border:none;cursor:pointer">✕ Đóng</button>`;
+    } else {
+      resultEl.innerHTML = `<p style="color:#e8521a;font-size:.8rem">❌ ${data.error}</p>`;
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<p style="color:#e8521a;font-size:.8rem">❌ Không kết nối được AI. Kiểm tra mạng.</p>';
+  }
+}
+
+// ── Chatbot ───────────────────────────────────────────────────
+function _addChatBubble(text, isUser) {
+  const box = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.cssText = isUser
+    ? 'background:#e8521a;color:#fff;border-radius:12px 12px 0 12px;padding:9px 12px;font-size:.82rem;max-width:80%;align-self:flex-end;line-height:1.5'
+    : 'background:#f9f5f2;color:#374151;border-radius:12px 12px 12px 0;padding:9px 12px;font-size:.82rem;max-width:85%;line-height:1.5';
+  div.innerHTML = text.split('\n').join('<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+async function pawAiSendChat() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  input.value = '';
+  _addChatBubble(question, true);
+  _chatHistory.push({role: 'user', content: question});
+
+  const typingEl = _addChatBubble('⏳ Đang soạn...', false);
+  typingEl.style.color = '#9ca3af';
+
+  try {
+    const res = await fetch('/api/ai/chatbot', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question, history: _chatHistory.slice(-6)})
+    });
+    const data = await res.json();
+
+    typingEl.remove();
+    if (data.ok) {
+      _addChatBubble(data.answer, false);
+      _chatHistory.push({role: 'assistant', content: data.answer});
+      // Giữ history tối đa 10 tin
+      if (_chatHistory.length > 10) _chatHistory = _chatHistory.slice(-10);
+    } else {
+      _addChatBubble('❌ ' + data.error, false);
+    }
+  } catch(e) {
+    typingEl.remove();
+    _addChatBubble('❌ Không kết nối được AI. Kiểm tra mạng.', false);
+  }
+}
+</script>
+
 {% endblock %}
 
 {% block scripts %}
