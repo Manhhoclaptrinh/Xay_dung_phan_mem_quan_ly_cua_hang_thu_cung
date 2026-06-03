@@ -1,8 +1,5 @@
 # app/ai/routes.py
-"""
-Blueprint ai_bp — prefix /api/ai
-Không conflict với user_bp, admin_bp, map_bp hiện có.
-"""
+
 from flask import Blueprint, request, jsonify
 
 ai_bp = Blueprint('ai', __name__)
