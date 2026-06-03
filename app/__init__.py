@@ -34,10 +34,12 @@ def create_app():
     from app.user.controllers.main_controller import user_bp
     from app.admin.controllers.dashboard_controller import admin_bp
     from app.router.map_routes import map_bp
-    
+    from app.ai.routes import ai_bp  # THÊM MỚI
+
     app.register_blueprint(map_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(ai_bp)   # THÊM MỚI
 
     with app.app_context():
         # Import tất cả models trước db.create_all() để tạo đủ bảng
@@ -333,6 +335,7 @@ def _seed_data():
     ]
 
     rooms = [
+
         Room(id='R01', room_type='Phòng VIP', status='occupied', notes='Ăn hạt đúng giờ'),
         Room(id='R02', room_type='Phòng Standard', status='available'),
         Room(id='R03', room_type='Phòng Standard', status='occupied', notes='Khá nhút nhát'),
@@ -342,6 +345,8 @@ def _seed_data():
         Room(id='R07', room_type='Phòng Standard', status='available'),
         Room(id='R08', room_type='Phòng Nhỏ', status='cleaning'),
     ]
+    
+    
 
     staff_list = [
 
