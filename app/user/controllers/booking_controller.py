@@ -83,6 +83,14 @@ def submit_booking():
         db.session.add(booking)
         db.session.commit()
 
+        # ── Tạo lịch nhắc (THÊM MỚI - không ảnh hưởng logic cũ) ──
+        try:
+            from app.admin.controllers.reminder_service import create_reminders_for_booking
+            create_reminders_for_booking(booking)
+        except Exception as _re:
+            print(f"[Reminder] Bỏ qua lỗi tạo reminder: {_re}")
+        # ── end reminder ──
+
         return jsonify({
             'ok': True,
             'message': f'✅ Đặt lịch thành công! Chúng tôi sẽ gọi {phone} để xác nhận trong 30 phút. 📅',

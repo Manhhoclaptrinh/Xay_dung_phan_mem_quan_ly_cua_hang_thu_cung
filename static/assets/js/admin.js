@@ -1774,134 +1774,432 @@ async function cancelApt(id) {
   admRender();
 }
 
-// BOARDING
-// BOARDING - CẬP NHẬT HOÀN CHỈNH
+// BOARDING (PET HOTEL)
+
 async function admBoarding() {
+
   const rooms = await api('/api/rooms');
-  const occupied = rooms.filter(r => r.status === 'occupied').length;
-  const available = rooms.filter(r => r.status === 'available').length;
-  const cleaning = rooms.filter(r => r.status === 'cleaning').length;
+
+  const occupied =
+    rooms.filter(r => r.status === 'occupied').length;
+
+  const available =
+    rooms.filter(r => r.status === 'available').length;
+
+  const cleaning =
+    rooms.filter(r => r.status === 'cleaning').length;
+
+  const occupancyRate =
+    rooms.length > 0
+      ? Math.round((occupied / rooms.length) * 100)
+      : 0;
 
   document.getElementById('admContent').innerHTML = `
+
+  <!-- HEADER -->
+
   <div class="adm-page-header">
+
     <div>
-        <div class="adm-page-title">Lưu trú (Pet Hotel)</div>
-        <div class="adm-page-sub">${occupied}/${rooms.length} phòng có khách</div>
+
+      <div class="adm-page-title">
+        🏨 Quản lý lưu trú thú cưng
+      </div>
+
+      <div class="adm-page-sub">
+        Quản lý phòng khách sạn thú cưng
+      </div>
+
     </div>
-    <!-- Cập nhật onclick để gọi hàm hiển thị Modal thực tế -->
-    <button class="adm-btn adm-btn-primary" onclick="admShowCheckinModal()">+ Nhận phòng</button>
+
+    <div class="flex gap8">
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="admBoarding()">
+
+        🔄 Làm mới
+
+      </button>
+
+      <button
+        class="adm-btn adm-btn-primary"
+        onclick="openCheckinModal()">
+
+        🏠 Nhận phòng
+
+      </button>
+
+    </div>
+
   </div>
+
+  <!-- THỐNG KÊ -->
 
   <div class="adm-grid adm-g4 mb24">
-    <div class="adm-stat" style="--sc:var(--pink)"><div class="adm-stat-icon">🏠</div><div class="adm-stat-val">${occupied}</div><div class="adm-stat-label">Đang có khách</div></div>
-    <div class="adm-stat" style="--sc:var(--teal)"><div class="adm-stat-icon">✅</div><div class="adm-stat-val">${available}</div><div class="adm-stat-label">Phòng trống</div></div>
-    <div class="adm-stat" style="--sc:var(--gold)"><div class="adm-stat-icon">🧹</div><div class="adm-stat-val">${cleaning}</div><div class="adm-stat-label">Đang vệ sinh</div></div>
-    <div class="adm-stat" style="--sc:var(--accent)"><div class="adm-stat-icon">💰</div><div class="adm-stat-val">760K</div><div class="adm-stat-label">Đang phát sinh</div></div>
+
+    <div class="adm-stat" style="--sc:var(--pink)">
+
+      <div class="adm-stat-icon">
+        🐾
+      </div>
+
+      <div class="adm-stat-val">
+        ${occupied}
+      </div>
+
+      <div class="adm-stat-label">
+        Đang có khách
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--teal)">
+
+      <div class="adm-stat-icon">
+        🏠
+      </div>
+
+      <div class="adm-stat-val">
+        ${available}
+      </div>
+
+      <div class="adm-stat-label">
+        Phòng trống
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--gold)">
+
+      <div class="adm-stat-icon">
+        🧹
+      </div>
+
+      <div class="adm-stat-val">
+        ${cleaning}
+      </div>
+
+      <div class="adm-stat-label">
+        Đang vệ sinh
+      </div>
+
+    </div>
+
+    <div class="adm-stat" style="--sc:var(--accent)">
+
+      <div class="adm-stat-icon">
+        📊
+      </div>
+
+      <div class="adm-stat-val">
+        ${occupancyRate}%
+      </div>
+
+      <div class="adm-stat-label">
+        Tỷ lệ lấp đầy
+      </div>
+
+    </div>
+
   </div>
 
-  <div class="adm-card">
-    <div class="adm-card-title">Sơ đồ phòng</div>
-    <div class="adm-room-grid">
-      ${rooms.map(r => `
-      <div class="adm-room ${r.status}" 
-       style="cursor: pointer;" 
-       onclick="${r.status === 'available' ? `quickCheckin('${r.id}')` : `viewRoomDetail('${r.id}')`}">
-      <div class="adm-room-icon">${r.status === 'occupied' ? '🐾' : r.status === 'cleaning' ? '🧹' : '🏠'}</div>
-      <div class="adm-room-id">${r.id}</div>
-      <div class="adm-room-status">${r.status === 'occupied' ? 'Có khách' : r.status === 'available' ? 'Trống' : 'Đang dọn'}</div>
-     </div>`).join('')}
+  <!-- TỔNG QUAN -->
+
+  <div class="adm-card mb24">
+
+    <div class="adm-card-title">
+      Tổng quan lưu trú
     </div>
-  </div>`;  
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Số phòng hiện có
+      </span>
+
+      <strong>
+        ${rooms.length}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Đang sử dụng
+      </span>
+
+      <strong class="text-pink">
+        ${occupied}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Phòng trống
+      </span>
+
+      <strong class="text-teal">
+        ${available}
+      </strong>
+
+    </div>
+
+    <div class="fxb mb12">
+
+      <span class="text-sm">
+        Đang vệ sinh
+      </span>
+
+      <strong class="text-gold">
+        ${cleaning}
+      </strong>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="fxb mb8">
+
+      <span class="text-sm text-muted">
+        Tỷ lệ sử dụng
+      </span>
+
+      <strong>
+        ${occupancyRate}%
+      </strong>
+
+    </div>
+
+    <div class="adm-progress">
+
+      <div
+        class="adm-progress-fill"
+        style="width:${occupancyRate}%">
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- DANH SÁCH PHÒNG -->
+
+  <div class="adm-card">
+
+    <div class="fxb mb16">
+
+      <div class="adm-card-title">
+
+        Sơ đồ phòng lưu trú
+
+      </div>
+
+      <span class="adm-tag adm-tag-blue">
+
+        ${rooms.length} phòng
+
+      </span>
+
+    </div>
+
+    <div class="adm-room-grid">
+
+      ${rooms.map(room => {
+
+        let roomText = '';
+        let roomIcon = '';
+        let tagColor = '';
+
+        if (room.status === 'occupied') {
+
+          roomText = 'Có khách';
+          roomIcon = '🐾';
+          tagColor = 'green';
+
+        }
+
+        else if (room.status === 'available') {
+
+          roomText = 'Trống';
+          roomIcon = '🏠';
+          tagColor = 'blue';
+
+        }
+
+        else {
+
+          roomText = 'Đang dọn';
+          roomIcon = '🧹';
+          tagColor = 'gold';
+
+        }
+
+        return `
+
+        <div
+          class="adm-room ${room.status}"
+          onclick="showRoomInfo('${room.id}')"
+          style="cursor:pointer">
+
+          <div class="adm-room-icon">
+
+            ${roomIcon}
+
+          </div>
+
+          <div
+            class="adm-room-id"
+            style="font-size:18px;font-weight:800">
+
+            ${room.id}
+
+          </div>
+
+          <div class="adm-room-status">
+
+            <span class="adm-tag adm-tag-${tagColor}">
+              ${roomText}
+            </span>
+
+          </div>
+
+          <div
+            style="
+              margin-top:10px;
+              font-size:12px;
+              color:var(--text3);
+            ">
+
+            ${room.room_type || 'Phòng tiêu chuẩn'}
+
+          </div>
+
+        </div>
+
+        `;
+
+      }).join('')}
+
+    </div>
+
+  </div>
+
+  `;
 }
 
 // Hàm hiển thị Modal Nhận phòng
-async function admShowCheckinModal() {
-    const [pets, rooms] = await Promise.all([api('/api/pets'), api('/api/rooms')]);
-    const availableRooms = rooms.filter(r => r.status === 'available');
+async function openCheckinModal() {
 
-    document.getElementById('admModalTitle').textContent = '🐾 Đăng ký nhận phòng (Check-in)';
-    
-    document.getElementById('admModalBody').innerHTML = `
-        <div class="adm-grid adm-g2" style="gap:15px">
-            <div class="adm-form-group">
-                <label class="adm-label">Thú cưng</label>
-                <select class="adm-input" id="checkinPetId">
-                    <option value="">-- Chọn thú cưng --</option>
-                    ${pets.map(p => `<option value="${p.id}">${p.name} (Chủ: ${p.owner_name})</option>`).join('')}
-                </select>
-            </div>
-            <div class="adm-form-group">
-                <label class="adm-label">Phòng trống</label>
-                <select class="adm-input" id="checkinRoomId">
-                    ${availableRooms.map(r => `<option value="${r.id}">Phòng ${r.id} (${fmt(r.price || 150000)}/ngày)</option>`).join('')}
-                </select>
-            </div>
-        </div>
-        <div class="adm-grid adm-g2 mt12" style="gap:15px">
-            <div class="adm-form-group">
-                <label class="adm-label">Ngày nhận</label>
-                <input type="date" class="adm-input" id="checkinDate" value="${new Date().toISOString().split('T')[0]}">
-            </div>
-            <div class="adm-form-group">
-                <label class="adm-label">Dự kiến trả</label>
-                <input type="date" class="adm-input" id="checkoutDate">
-            </div>
-        </div>
-        <div class="adm-form-group mt12">
-            <label class="adm-label">Ghi chú đặc biệt</label>
-            <textarea class="adm-input" id="checkinNote" rows="2" placeholder="Tình trạng sức khỏe, thói quen ăn uống..."></textarea>
-        </div>
-    `;
+  const rooms = await api('/api/rooms');
+  const pets  = await api('/api/pets');
 
-    document.getElementById('admModalFoot').innerHTML = `
-        <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
-        <button class="adm-btn adm-btn-primary" onclick="admSubmitCheckin()">Xác nhận nhận phòng</button>
-    `;
+  const availableRooms =
+    rooms.filter(r => r.status === 'available');
 
-    document.getElementById('admModalOverlay').classList.add('open');
-}
+  document.getElementById('admModalTitle').textContent =
+    '🏠 Nhận phòng lưu trú';
 
-async function quickCheckin(roomId) {
-    await admShowCheckinModal(); 
-    const roomSelect = document.getElementById('checkinRoomId');
-    if (roomSelect) {
-        roomSelect.value = roomId;
-    }
-}
-// Hàm gửi dữ liệu Check-in về Server
-async function admSubmitCheckin() {
-    const payload = {
-        pet_id: document.getElementById('checkinPetId').value,
-        room_id: document.getElementById('checkinRoomId').value,
-        checkin_date: document.getElementById('checkinDate').value,
-        checkout_expected: document.getElementById('checkoutDate').value,
-        note: document.getElementById('checkinNote').value
-    };
+  document.getElementById('admModalBody').innerHTML = `
 
-    // Kiểm tra dữ liệu đầu vào
-    if (!payload.pet_id || !payload.room_id || !payload.checkout_expected) {
-        toast('Vui lòng điền đầy đủ thông tin và ngày dự kiến trả!', 'error');
-        return;
-    }
+    <div class="adm-form-row">
 
-    try {
-        const res = await api('/api/boarding/checkin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (res.success || res.message === "Nhận phòng thành công!") {
-            admCloseModal();
-            toast(res.message || 'Nhận phòng thành công!', 'success');
-            admRender(); // Tải lại giao diện để các ô R01, R02... cập nhật màu sắc
-        } else {
-            toast(res.message || 'Có lỗi xảy ra', 'error');
-        }
-    } catch (err) {
-        toast('Không thể kết nối đến máy chủ', 'error');
-        console.error(err);
-    }
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Chọn phòng
+        </label>
+
+        <select class="adm-select" id="checkinRoom">
+
+          ${availableRooms.map(r => `
+            <option value="${r.id}">
+              ${r.id}
+            </option>
+          `).join('')}
+
+        </select>
+
+      </div>
+
+      <div class="adm-form-group">
+
+        <label class="adm-label">
+          Ngày nhận
+        </label>
+
+        <input
+          type="datetime-local"
+          class="adm-input"
+          id="checkinDate">
+
+      </div>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Chọn thú cưng
+      </label>
+
+      <select
+        class="adm-select"
+        id="checkinPet"
+        onchange="fillOwnerInfo()">
+
+        <option value="">
+          -- Chọn thú cưng --
+        </option>
+
+        ${pets.map(p => `
+          <option
+            value="${p.id}"
+            data-owner="${p.owner_name || ''}">
+            ${p.name} (${p.id})
+          </option>
+        `).join('')}
+
+      </select>
+
+    </div>
+
+    <div class="adm-form-group">
+
+      <label class="adm-label">
+        Chủ nuôi
+      </label>
+
+      <input
+        class="adm-input"
+        id="ownerName"
+        readonly>
+
+    </div>
+
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+
+    <button
+      class="adm-btn adm-btn-sec"
+      onclick="admCloseModal()">
+      Hủy
+    </button>
+
+    <button
+      class="adm-btn adm-btn-primary"
+      onclick="confirmCheckin()">
+      🏠 Xác nhận nhận phòng
+    </button>
+
+  `;
+
+  document.getElementById('admModalOverlay')
+    .classList.add('open');
 }
 
 // POS 
@@ -3666,3 +3964,387 @@ async function saveService(petId) {
   admRender();
 }
 
+
+
+// ================================================================
+// NOTIFICATION BELL — Nhắc lịch booking (THÊM MỚI)
+// ================================================================
+
+let _notifOpen = false;
+
+async function admLoadNotif() {
+  const listEl  = document.getElementById('admNotifList');
+  const badge   = document.getElementById('admNotifBadge');
+  const countEl = document.getElementById('admNotifCount');
+  if (!listEl) return;
+
+  try {
+    // Lấy reminders Pending
+    const pending = await api('/api/booking-reminders?status=Pending');
+
+    // Cập nhật badge
+    const count = pending.length;
+    badge.textContent  = count;
+    badge.style.background = count > 0 ? 'var(--accent)' : 'var(--text3)';
+    countEl.textContent = count > 0 ? `${count} lịch cần nhắc` : 'Không có lịch cần nhắc';
+
+    if (count === 0) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:28px;color:var(--text3);font-size:.85rem">
+          ✅ Không có lịch nhắc nào hôm nay
+        </div>`;
+      return;
+    }
+
+    // Render từng reminder
+    listEl.innerHTML = pending.map(r => {
+      const typeLabel = r.remind_type === '1_day'
+        ? '<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:6px;font-size:.7rem;font-weight:700">Trước 1 ngày</span>'
+        : '<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:6px;font-size:.7rem;font-weight:700">Trước 1 giờ</span>';
+
+      return `
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;font-size:.85rem">${r.full_name || '—'}</span>
+            ${typeLabel}
+          </div>
+          <div style="font-size:.78rem;color:var(--text3)">
+            📞 ${r.phone || '—'} &nbsp;|&nbsp; 🐾 ${r.service || '—'}
+          </div>
+          <div style="font-size:.78rem;color:var(--text3)">
+            📅 ${r.date || '—'} lúc ${r.time_slot || '—'}
+          </div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <a href="tel:${r.phone}" class="adm-btn adm-btn-sec adm-btn-sm" style="font-size:.72rem;text-decoration:none">
+              📞 Gọi ngay
+            </a>
+            <button class="adm-btn adm-btn-sm" style="font-size:.72rem;background:#dcfce7;color:#166534"
+              onclick="admMarkReminderSent(${r.id})">
+              ✅ Đã nhắc
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--accent);font-size:.82rem">Lỗi tải thông báo</div>`;
+  }
+}
+
+async function admMarkReminderSent(reminderId) {
+  try {
+    await api('/api/booking-reminders/' + reminderId + '/mark-sent', { method: 'POST' });
+    admLoadNotif(); // reload
+  } catch(e) {
+    toast('Lỗi cập nhật', 'error');
+  }
+}
+
+function admToggleNotif() {
+  _notifOpen = !_notifOpen;
+  const dd = document.getElementById('admNotifDropdown');
+  dd.style.display = _notifOpen ? 'block' : 'none';
+  if (_notifOpen) admLoadNotif();
+}
+
+// Đóng dropdown khi click ra ngoài
+document.addEventListener('click', e => {
+  const btn = document.getElementById('admNotifBtn');
+  const dd  = document.getElementById('admNotifDropdown');
+  if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+    dd.style.display = 'none';
+    _notifOpen = false;
+  }
+});
+
+// Hàm riêng chỉ cập nhật badge (không render dropdown)
+async function _refreshNotifBadge() {
+  try {
+    const pending = await api('/api/booking-reminders?status=Pending');
+    const badge = document.getElementById('admNotifBadge');
+    if (badge) {
+      badge.textContent = pending.length;
+      badge.style.background = pending.length > 0 ? 'var(--accent)' : 'var(--text3)';
+    }
+  } catch(_) {}
+}
+
+// Tự động refresh badge mỗi 2 phút
+setInterval(_refreshNotifBadge, 120000);
+
+// Load badge ngay khi trang mở (1 lần duy nhất)
+window.addEventListener('load', () => setTimeout(_refreshNotifBadge, 1500));
+
+async function openCheckinModal() {
+  const rooms = await api('/api/rooms');
+  const pets  = await api('/api/pets');
+
+  const availableRooms = rooms.filter(r => r.status === 'available');
+
+  document.getElementById('admModalTitle').textContent = '🏠 Nhận phòng lưu trú';
+
+  document.getElementById('admModalBody').innerHTML = `
+    <div class="adm-form-row">
+      <div class="adm-form-group">
+        <label class="adm-label">Chọn phòng</label>
+        <select class="adm-select" id="checkinRoom">
+          ${availableRooms.map(r => `
+            <option value="${r.id}">${r.id}</option>
+          `).join('')}
+        </select>
+      </div>
+
+      <div class="adm-form-group">
+        <label class="adm-label">Ngày nhận</label>
+        <input type="datetime-local" class="adm-input" id="checkinDate">
+      </div>
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Chọn thú cưng</label>
+      <select class="adm-select" id="checkinPet" onchange="fillOwnerInfo()">
+        <option value="">-- Chọn thú cưng --</option>
+        ${pets.map(p => `
+          <option value="${p.id}" data-owner="${p.owner_name || ''}">
+            ${p.name} (${p.id})
+          </option>
+        `).join('')}
+      </select>
+    </div>
+
+    <div class="adm-form-group">
+      <label class="adm-label">Chủ nuôi</label>
+      <input class="adm-input" id="ownerName" readonly placeholder="Hệ thống tự động hiển thị chủ nuôi...">
+    </div>
+  `;
+
+  document.getElementById('admModalFoot').innerHTML = `
+    <button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Hủy</button>
+    <button class="adm-btn adm-btn-primary" onclick="confirmCheckin()">🏠 Xác nhận nhận phòng</button>
+  `;
+
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+
+function fillOwnerInfo() {
+  const petSelect = document.getElementById('checkinPet');
+  const ownerInput = document.getElementById('ownerName');
+  if (petSelect && ownerInput) {
+    const selectedOption = petSelect.options[petSelect.selectedIndex];
+    ownerInput.value = selectedOption.getAttribute('data-owner') || (petSelect.value ? 'Chưa có thông tin chủ nuôi' : '');
+  }
+}
+async function confirmCheckin() {
+
+  const room =
+    document.getElementById('checkinRoom').value;
+
+  const petId =
+    document.getElementById('checkinPet').value;
+
+  const date =
+    document.getElementById('checkinDate').value;
+
+  if (!room) {
+
+    toast(
+      'Vui lòng chọn phòng',
+      'error'
+    );
+
+    return;
+  }
+
+  if (!petId) {
+
+    toast(
+      'Vui lòng chọn thú cưng',
+      'error'
+    );
+
+    return;
+  }
+
+  if (!date) {
+
+    toast(
+      'Vui lòng chọn ngày nhận',
+      'error'
+    );
+
+    return;
+  }
+
+  try {
+
+    const roomInfo =
+      await api('/api/rooms');
+
+    const currentRoom =
+      roomInfo.find(r => r.id === room);
+
+    if (
+      currentRoom &&
+      currentRoom.status === 'occupied'
+    ) {
+
+      toast(
+        'Phòng đã có khách',
+        'error'
+      );
+
+      return;
+    }
+
+    const result =
+      await api(`/api/rooms/${room}`, {
+
+        method: 'PATCH',
+
+        body: JSON.stringify({
+        status: 'occupied',
+        pet_id: petId,
+        checkin_date: date
+      })
+
+      });
+
+    admCloseModal();
+
+    toast(
+      result.message ||
+      'Nhận phòng thành công',
+      'success'
+    );
+
+    admBoarding();
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast(
+      'Lỗi nhận phòng',
+      'error'
+    );
+
+  }
+}
+
+async function checkoutRoom(id) {
+  if (!confirm(`Bạn có chắc chắn muốn làm thủ tục TRẢ PHÒNG cho phòng ${id}? \nPhòng sẽ tự động chuyển sang trạng thái chờ dọn dẹp.`)) {
+    return;
+  }
+
+
+  const response = await api(`/api/rooms/${id}/checkout`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'cleaning' })
+  });
+
+  admCloseModal(); 
+  if (toast) toast(response.message || `Đã trả phòng ${id} thành công!`, 'success');
+  admBoarding(); 
+
+}
+
+async function showRoomInfo(id) {
+  const room = await api(`/api/rooms/${id}`);
+  
+  const statusLabels = {
+    'occupied': '🔴 Đang có khách',
+    'available': '🟢 Phòng trống',
+    'cleaning': '🟡 Đang dọn dẹp'
+  };
+
+  document.getElementById('admModalTitle').textContent = `🏨 Quản lý chi tiết: Phòng ${room.id}`;
+
+  let bodyHtml = `
+    <div style="font-family:var(--ff); padding: 5px;">
+      <div class="adm-grid adm-g2" style="gap:16px; margin-bottom:20px">
+        <div><strong>Mã phòng:</strong> <div class="mt4 font-bold" style="font-size:1.1rem">${room.id}</div></div>
+        <div><strong>Loại phòng:</strong> <div class="mt4">${room.room_type || 'Phòng tiêu chuẩn'}</div></div>
+        <div><strong>Trạng thái:</strong> <div class="mt4"><span class="adm-tag adm-tag-${room.status === 'occupied' ? 'green' : room.status === 'available' ? 'blue' : 'gold'}">${statusLabels[room.status]}</span></div></div>
+        <div><strong>Giá phòng/ngày:</strong> <div class="mt4 text-accent font-bold">${typeof fmt !== 'undefined' ? fmt(room.price || 0) : room.price}</div></div>
+      </div>
+      <div class="divider"></div>
+  `;
+
+  if (room.status === 'occupied') {
+    // Tự động lấy class định dạng màu theo Hạng thành viên đồng bộ với phần CRM
+    const levelClass = room.owner_level ? { Diamond: 'blue', Gold: 'gold', Silver: 'purple', Bronze: 'orange' }[room.owner_level] : 'sec';
+
+    bodyHtml += `
+      <div style="background:var(--cream); padding:16px; border-radius:8px; margin-top:12px; border-left:4px solid var(--pink)">
+        <h4 style="margin:0 0 12px 0; color:var(--accent); display:flex; align-items:center; gap:6px;">🐾 Thông tin khách hàng & Thú cưng</h4>
+        
+        <div class="adm-grid adm-g2" style="gap:12px; font-size:0.9rem">
+          <div><strong>Tên thú cưng:</strong> <span style="color:var(--text); font-weight:600;">${room.pet_name || 'Chưa cập nhật'}</span></div>
+          <div><strong>Chủ nuôi:</strong> <span class="font-bold text-accent">${room.owner_name || 'Chưa cập nhật'}</span></div>
+          
+          <div><strong>Ngày nhận phòng:</strong> <span>${room.checkin_date || '—'}</span></div>
+          <div><strong>Số điện thoại:</strong> <span style="color:var(--text); font-weight:600;">${room.owner_phone || 'Chưa cập nhật'}</span></div>
+          
+          ${room.owner_level ? `
+          <div style="grid-column: span 2; display:flex; align-items:center; gap:8px; margin-top:4px;">
+            <strong>Hạng thành viên:</strong> 
+            <span class="adm-tag adm-tag-${levelClass}">${room.owner_level}</span>
+          </div>
+          ` : ''}
+
+          <div style="grid-column: span 2; margin-top:4px;">
+            <strong>Ghi chú/Dị ứng:</strong> <span class="text-pink" style="font-weight:600;">${room.notes || 'Không có'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (room.status === 'cleaning') {
+    bodyHtml += `
+      <p class="text-muted" style="text-align:center; padding:10px 0">🧹 Phòng đang trong quá trình vệ sinh, khử trùng sạch sẽ trước khi đón khách tiếp theo.</p>
+    `;
+  } else {
+    bodyHtml += `
+      <p class="text-teal" style="text-align:center; padding:10px 0">🏠 Phòng trống sạch sẽ, sẵn sàng đón khách vào ở.</p>
+    `;
+  }
+
+  bodyHtml += `</div>`;
+  document.getElementById('admModalBody').innerHTML = bodyHtml;
+
+  let footHtml = `<button class="adm-btn adm-btn-sec" onclick="admCloseModal()">Đóng</button>`;
+
+  if (room.status === 'occupied') {
+    footHtml += `
+      <button class="adm-btn adm-btn-danger" onclick="checkoutRoom('${room.id}')">
+        🏃 Rời phòng (Trả phòng)
+      </button>
+    `;
+  } else if (room.status === 'cleaning') {
+    footHtml += `
+      <button class="adm-btn adm-btn-success" onclick="finishCleaningRoom('${room.id}')">
+        ✅ Đã dọn xong (Hoàn phòng)
+      </button>
+    `;
+  } else if (room.status === 'available') {
+    footHtml += `
+      <button class="adm-btn adm-btn-primary" onclick="admCloseModal(); openCheckinModal('${room.id}')">
+        🔑 Cho thuê phòng
+      </button>
+    `;
+  }
+
+  document.getElementById('admModalFoot').innerHTML = footHtml;
+  document.getElementById('admModalOverlay').classList.add('open');
+}
+
+async function finishCleaningRoom(id) {
+
+  const response = await api(`/api/rooms/${id}/clean`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'available' })
+  });
+
+  admCloseModal(); 
+  if (toast) toast(response.message || `Phòng ${id} đã sạch sẽ, sẵn sàng đón khách mới!`, 'success');
+  admBoarding(); 
+}

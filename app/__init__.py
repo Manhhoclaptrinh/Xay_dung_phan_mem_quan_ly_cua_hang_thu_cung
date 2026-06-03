@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -7,6 +9,8 @@ login_manager = LoginManager()
 
 
 def create_app():
+    os.makedirs("instance", exist_ok=True)
+    
     app = Flask(
         __name__,
         template_folder='../templates',
@@ -36,12 +40,20 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
     with app.app_context():
+        # Import tất cả models trước db.create_all() để tạo đủ bảng
+        from app.user.models.booking_reminder_model import BookingReminder  # THÊM MỚI
         db.create_all()
         _seed_data()
 
-    return app
+    # ── Khởi động reminder scheduler (THÊM MỚI) ──
+    try:
+        from app.admin.controllers.reminder_service import start_reminder_scheduler
+        start_reminder_scheduler(app)
+    except Exception as _e:
+        print(f"[Reminder] Không khởi động được scheduler: {_e}")
+    # ── end scheduler ──
 
-import os
+    return app
 
 def _seed_data():
     """Seed initial data if tables are empty."""
@@ -63,6 +75,7 @@ def _seed_data():
     from app.admin.models.order_model import Order
 
     from app.user.models.transport_model import TransportBooking
+    from app.user.models.booking_reminder_model import BookingReminder
 
     if Product.query.first():
         return
@@ -320,18 +333,14 @@ def _seed_data():
     ]
 
     rooms = [
-
-        Room(
-            id='R01',
-            room_type='Phòng VIP',
-            status='occupied'
-        ),
-
-        Room(
-            id='R02',
-            room_type='Phòng Standard',
-            status='available'
-        ),
+        Room(id='R01', room_type='Phòng VIP', status='occupied', notes='Ăn hạt đúng giờ'),
+        Room(id='R02', room_type='Phòng Standard', status='available'),
+        Room(id='R03', room_type='Phòng Standard', status='occupied', notes='Khá nhút nhát'),
+        Room(id='R04', room_type='Phòng Nhỏ', status='available'),
+        Room(id='R05', room_type='Phòng VIP', status='cleaning'),
+        Room(id='R06', room_type='Phòng Nhỏ', status='available'),
+        Room(id='R07', room_type='Phòng Standard', status='available'),
+        Room(id='R08', room_type='Phòng Nhỏ', status='cleaning'),
     ]
 
     staff_list = [

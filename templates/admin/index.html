@@ -54,7 +54,28 @@
     <div class="adm-topbar-title" id="admTitle">Dashboard</div>
     <div class="flex gap8">
       <a href="/" class="adm-btn adm-btn-sec adm-btn-sm" style="text-decoration:none">🏪 Về cửa hàng</a>
-      <button class="adm-btn adm-btn-sec adm-btn-sm">🔔 Thông báo <span style="background:var(--accent);color:#fff;border-radius:50px;font-size:.62rem;padding:1px 6px;margin-left:4px">3</span></button>
+      <div style="position:relative;display:inline-block">
+        <button class="adm-btn adm-btn-sec adm-btn-sm" id="admNotifBtn" onclick="admToggleNotif()" style="position:relative">
+          🔔 Thông báo
+          <span id="admNotifBadge" style="background:var(--accent);color:#fff;border-radius:50px;font-size:.62rem;padding:1px 6px;margin-left:4px">0</span>
+        </button>
+        <div id="admNotifDropdown" style="
+          display:none;position:absolute;top:calc(100% + 8px);right:0;
+          width:340px;background:var(--white);border-radius:14px;
+          box-shadow:0 8px 32px rgba(0,0,0,.15);border:1px solid var(--border);
+          z-index:9999;overflow:hidden">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;font-size:.9rem">🔔 Nhắc lịch hôm nay</span>
+            <span id="admNotifCount" style="font-size:.75rem;color:var(--text3)"></span>
+          </div>
+          <div id="admNotifList" style="max-height:360px;overflow-y:auto;padding:8px 0">
+            <div style="text-align:center;padding:24px;color:var(--text3);font-size:.85rem">Đang tải...</div>
+          </div>
+          <div style="padding:10px 16px;border-top:1px solid var(--border);text-align:center">
+            <button class="adm-btn adm-btn-sec adm-btn-sm" onclick="admLoadNotif()" style="font-size:.78rem">🔄 Làm mới</button>
+          </div>
+        </div>
+      </div>
       <button class="adm-btn adm-btn-primary adm-btn-sm" onclick="admShowModal('addTransaction')">+ Giao dịch</button>
     </div>
   </header>

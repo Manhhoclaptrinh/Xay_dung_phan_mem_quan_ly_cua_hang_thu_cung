@@ -526,19 +526,183 @@ def api_add_appointment():
     db.session.commit()
     return jsonify({'ok': True, 'message': 'Đã đặt lịch thành công!'})
 
-
-# ROOMS / BOARDING
+# ROOMS / BOARDING (QUẢN LÝ LƯU TRÚ)
 @admin_bp.route('/api/rooms')
 def api_rooms():
     rooms = Room.query.all()
     return jsonify([r.to_dict() for r in rooms])
 
 
-# STAFF
-@admin_bp.route('/api/staff')
+@admin_bp.route('/api/rooms/<string:room_id>', methods=['GET'])
+def api_room_detail(room_id):
+    room = Room.query.get_or_404(room_id)
+    data = room.to_dict()
+    
+    if room.status == 'occupied' and hasattr(room, 'pet') and room.pet:
+        data['pet_name'] = room.pet.name
+        data['notes'] = room.notes if hasattr(room, 'notes') else 'Không có'
+        data['checkin_date'] = room.checkin_date if hasattr(room, 'checkin_date') else '—'
+        if room.pet.owner:
+            data['owner_name'] = room.pet.owner.name
+            data['owner_phone'] = room.pet.owner.phone
+            
+    return jsonify(data)
+
+
+@admin_bp.route('/api/rooms/<string:room_id>/checkout', methods=['PUT'])
+def api_checkout_room(room_id):
+    room = Room.query.get_or_404(room_id)
+    room.status = 'cleaning'
+    if hasattr(room, 'pet_id'):
+        room.pet_id = None 
+    db.session.commit()
+    return jsonify({'ok': True, 'message': f'Đã trả phòng {room_id} thành công!'})
+
+
+@admin_bp.route('/api/rooms/<string:room_id>/clean', methods=['PUT'])
+def api_finish_cleaning(room_id):
+    room = Room.query.get_or_404(room_id)
+    room.status = 'available'
+    db.session.commit()
+    return jsonify({'ok': True, 'message': f'Phòng {room_id} đã dọn dẹp sạch sẽ!'})
+
+
+@admin_bp.route('/api/rooms/<string:room_id>', methods=['PATCH', 'PUT'])
+def api_update_room(room_id):
+    room = Room.query.get_or_404(room_id)
+    data = request.get_json(force=True)
+    room.status = data.get('status', room.status)
+    if 'pet_id' in data:
+        room.pet_id = data['pet_id']
+    db.session.commit()
+    return jsonify({'ok': True, 'message': 'Nhận phòng thành công!', 'room': room.to_dict()})
+
+# STAFF — CRUD + SHIFTS
+import random, string as _string
+
+_SHIFT_HOURS = {
+    'Ca sáng (7h-12h)':    (7,  12),
+    'Ca chiều (13h-18h)': (13, 18),
+    'Ca tối (18h-22h)':   (18, 22),
+    'Hành chính (8h-17h)':(8,  17),
+    'Cả ngày (7h-22h)':   (7,  22),
+}
+
+def _gen_staff_id():
+    existing = {s.id for s in Staff.query.all()}
+    for _ in range(300):
+        nid = 'S' + ''.join(random.choices(_string.digits, k=3))
+        if nid not in existing:
+            return nid
+    raise RuntimeError('Không tạo được ID')
+
+def _staff_color(name):
+    colors = ['#e8521a','#2a7de1','#27ae60','#8e44ad',
+              '#f39c12','#16a085','#c0392b','#2980b9']
+    return colors[sum(ord(c) for c in name) % len(colors)]
+
+def _shift_conflict(exclude_id, shift):
+    if shift not in _SHIFT_HOURS:
+        return None
+    ns, ne = _SHIFT_HOURS[shift]
+    for s in Staff.query.all():
+        if exclude_id and s.id == exclude_id:
+            continue
+        if s.shift not in _SHIFT_HOURS:
+            continue
+        ss, se = _SHIFT_HOURS[s.shift]
+        if ns < se and ss < ne:
+            return f"Ca '{shift}' trùng giờ với {s.name} ({s.shift})"
+    return None
+
+@admin_bp.route('/api/staff', methods=['GET'])
 def api_staff():
     staff = Staff.query.all()
     return jsonify([s.to_dict() for s in staff])
+
+@admin_bp.route('/api/staff/<staff_id>', methods=['GET'])
+def api_staff_detail(staff_id):
+    s = Staff.query.get(staff_id)
+    if not s:
+        return jsonify({'success': False, 'message': 'Không tìm thấy'}), 404
+    return jsonify(s.to_dict())
+
+@admin_bp.route('/api/staff', methods=['POST'])
+def api_staff_create():
+    from sqlalchemy.exc import IntegrityError
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'Họ tên không được trống'}), 400
+    shift = data.get('shift', 'Hành chính (8h-17h)')
+    err = _shift_conflict(None, shift)
+    if err:
+        return jsonify({'success': False, 'message': err}), 409
+    try:
+        sid = _gen_staff_id()
+    except RuntimeError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    s = Staff(
+        id=sid, name=name,
+        role=(data.get('role') or 'Nhân viên').strip(),
+        phone=data.get('phone', '').strip(),
+        email=data.get('email', '').strip(),
+        shift=shift,
+        work_days=data.get('work_days', 0),
+        sales=data.get('sales', 0),
+        color=data.get('color') or _staff_color(name),
+    )
+    try:
+        db.session.add(s)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Lỗi khi thêm'}), 400
+    return jsonify({'success': True, 'message': 'Thêm thành công', 'id': sid})
+
+@admin_bp.route('/api/staff/<staff_id>', methods=['PUT'])
+def api_staff_update(staff_id):
+    s = Staff.query.get(staff_id)
+    if not s:
+        return jsonify({'success': False, 'message': 'Không tìm thấy'}), 404
+    data = request.json or {}
+    new_shift = data.get('shift', s.shift)
+    err = _shift_conflict(staff_id, new_shift)
+    if err:
+        return jsonify({'success': False, 'message': err}), 409
+    s.name  = (data.get('name') or s.name).strip()
+    s.role  = (data.get('role') or s.role).strip()
+    s.phone = data.get('phone', s.phone)
+    s.email = data.get('email', s.email)
+    s.shift = new_shift
+    s.work_days = data.get('work_days', s.work_days)
+    s.sales     = data.get('sales', s.sales)
+    s.color     = data.get('color', s.color)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Cập nhật thành công'})
+
+@admin_bp.route('/api/staff/<staff_id>', methods=['DELETE'])
+def api_staff_delete(staff_id):
+    s = Staff.query.get(staff_id)
+    if not s:
+        return jsonify({'success': False, 'message': 'Không tìm thấy'}), 404
+    db.session.delete(s)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Xóa thành công'})
+
+@admin_bp.route('/api/staff-shifts', methods=['GET'])
+def api_staff_shifts():
+    occupied = {s.shift: s.name for s in Staff.query.all() if s.shift in _SHIFT_HOURS}
+    result = []
+    for shift_name, (start, end) in _SHIFT_HOURS.items():
+        result.append({
+            'shift':    shift_name,
+            'start':    start,
+            'end':      end,
+            'occupied': shift_name in occupied,
+            'by':       occupied.get(shift_name),
+        })
+    return jsonify(result)
 
 
 # VENDORS
@@ -1318,3 +1482,36 @@ def api_inventory_history():
         h.to_dict()
         for h in history
     ])
+
+# ==========================
+# BOOKING REMINDERS API (THÊM MỚI)
+# ==========================
+
+@admin_bp.route('/api/booking-reminders', methods=['GET'])
+def api_booking_reminders():
+    """Xem danh sách reminders - dùng cho admin panel."""
+    try:
+        from app.user.models.booking_reminder_model import BookingReminder
+        status_filter = request.args.get('status')  # Pending | Sent | Cancelled
+        query = BookingReminder.query.order_by(BookingReminder.remind_at.asc())
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        reminders = query.all()
+        return jsonify([r.to_dict() for r in reminders])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Mark reminder as Sent (THÊM MỚI) ─────────────────────────
+@admin_bp.route('/api/booking-reminders/<int:reminder_id>/mark-sent', methods=['POST'])
+def api_reminder_mark_sent(reminder_id):
+    try:
+        from app.user.models.booking_reminder_model import BookingReminder
+        r = BookingReminder.query.get(reminder_id)
+        if not r:
+            return jsonify({'success': False, 'message': 'Không tìm thấy'}), 404
+        r.status = 'Sent'
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

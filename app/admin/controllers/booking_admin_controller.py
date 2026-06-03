@@ -32,6 +32,13 @@ def confirm_booking(booking_id):
         
         booking.status = 'Xác nhận'
         db.session.commit()
+        # ── Tạo lịch nhắc khi xác nhận (THÊM MỚI) ──
+        try:
+            from app.admin.controllers.reminder_service import create_reminders_for_booking
+            create_reminders_for_booking(booking)
+        except Exception as _re:
+            print(f'[Reminder] Bỏ qua lỗi: {_re}')
+        # ── end reminder ──
         
         return jsonify({
             'ok': True,
@@ -51,6 +58,13 @@ def reject_booking(booking_id):
         
         booking.status = 'Hủy'
         db.session.commit()
+        # ── Huỷ reminders khi từ chối (THÊM MỚI) ──
+        try:
+            from app.admin.controllers.reminder_service import cancel_reminders_for_booking
+            cancel_reminders_for_booking(booking.id)
+        except Exception as _re:
+            print(f'[Reminder] Bỏ qua lỗi: {_re}')
+        # ── end reminder ──
         
         return jsonify({
             'ok': True,
