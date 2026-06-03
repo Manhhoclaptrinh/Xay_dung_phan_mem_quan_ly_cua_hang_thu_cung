@@ -165,9 +165,9 @@ def _seed_data():
     ]
 
     rooms = [
-        Room(id='R01', room_type='Phòng VIP', status='occupied'),
+        Room(id='R01', room_type='Phòng VIP', status='occupied', pet_id='PET001', checkin_date='2024-11-24', notes='Ăn hạt đúng giờ'),
         Room(id='R02', room_type='Phòng Standard', status='available'),
-        Room(id='R03', room_type='Phòng Standard', status='occupied'),
+        Room(id='R03', room_type='Phòng Standard', status='occupied', pet_id='PET002', checkin_date='2024-11-25', notes='Khá nhút nhát'),
         Room(id='R04', room_type='Phòng Nhỏ', status='available'),
         Room(id='R05', room_type='Phòng VIP', status='cleaning'),
         Room(id='R06', room_type='Phòng Nhỏ', status='available'),
