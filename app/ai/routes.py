@@ -9,7 +9,6 @@ ai_bp = Blueprint('ai', __name__)
 def api_service_advisor():
     """
     Tư vấn dịch vụ cho thú cưng.
-    Body JSON: {species, age, weight, issue}
     """
     data    = request.get_json(force=True) or {}
     species = data.get('species', '').strip()
