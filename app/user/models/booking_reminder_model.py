@@ -3,10 +3,7 @@ from datetime import datetime
 
 
 class BookingReminder(db.Model):
-    """
-    Bảng lưu lịch nhắc cho từng booking.
-    Tách riêng khỏi bảng reminders hiện tại để không ảnh hưởng code cũ.
-    """
+
     __tablename__ = 'booking_reminders'
 
     id          = db.Column(db.Integer, primary_key=True, autoincrement=True)

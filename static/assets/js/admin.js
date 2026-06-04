@@ -6,7 +6,7 @@ const admLabels = {
   inventory: 'Kho hàng', appointments: 'Lịch dịch vụ', boarding: 'Lưu trú (Hotel)',
   pos: 'Bán hàng (POS)', orders: 'Đơn hàng online', promotions: 'Khuyến mãi',
   vendors: 'Nhà cung cấp', staff: 'Nhân viên', reports: 'Báo cáo', reminders: 'Lịch tiêm phòng',
-  services: 'Dịch vụ đã sử dụng',
+  services: 'Dịch vụ đã sử dụng',transports: 'Lịch sử đưa đón',
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,7 +40,7 @@ async function admRender() {
     inventory: admInventory, appointments: admAppointments, boarding: admBoarding,
     pos: admPOS, orders: admOrders, promotions: admPromotions,
     vendors: admVendors, staff: admStaff, reports: admReports,bookings: admBookings, 
-    reminders: admReminders, services: admServices,
+    reminders: admReminders, services: admServices, transports: admTransports,
   };
   await (pages[admPage] || admDashboard)();
 }
@@ -4347,4 +4347,327 @@ async function finishCleaningRoom(id) {
   admCloseModal(); 
   if (toast) toast(response.message || `Phòng ${id} đã sạch sẽ, sẵn sàng đón khách mới!`, 'success');
   admBoarding(); 
+}
+
+async function admTransports(
+  search = '',
+  date = ''
+) {
+
+  const items = await api(
+    `/api/transports?search=${search}&date=${date}`
+  );
+
+  document.getElementById(
+    'admContent'
+  ).innerHTML = `
+
+  <div class="adm-page-header">
+
+    <div>
+      <div class="adm-page-title">
+        🚚 Lịch sử đưa đón
+      </div>
+      <div class="adm-page-sub">
+        ${items.length} chuyến xe
+      </div>
+    </div>
+
+    <div class="flex gap8">
+      <input
+        id="transportSearch"
+        class="adm-input"
+        placeholder="Tìm mã, khách hàng..."
+      >
+
+      <button
+        class="adm-btn adm-btn-sec"
+        onclick="searchTransport()"
+      >
+        🔍
+      </button>
+
+      <input
+          type="date"
+          id="transportDate"
+      />
+
+      <button
+          class="adm-btn"
+          onclick="filterTransport()"
+      >
+          Lọc
+      </button>
+    </div>
+
+  </div>
+
+  <div class="adm-card" style="padding:0">
+
+    <table class="adm-table">
+
+    <thead>
+      <tr>
+        <th>Mã</th>
+        <th>Khách hàng</th>
+        <th>Thú cưng</th>
+        <th>Ngày</th>
+        <th>Tài xế</th>
+        <th>Phí</th>
+        <th>Trạng thái</th>
+        <th>Chi tiết</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+
+      <tbody>
+
+      ${items.map(i => `
+
+      <tr>
+
+        <td>${i.booking_code}</td>
+
+        <td>
+          ${i.owner_name}
+          <br>
+          <small>${i.phone}</small>
+        </td>
+
+        <td>${i.pet_name}</td>
+
+        <td>
+          ${i.transport_date}
+          <br>
+          ${i.transport_time}
+        </td>
+
+        <td>${i.driver_name || '-'}</td>
+
+        <td>${fmt(i.total_price)}</td>
+
+        <td>
+          <span class="
+          adm-badge
+          ${transportBadge(i.status)}
+          ">
+
+          ${i.status}
+
+          </span>
+
+        </td>
+
+        <td>
+
+          <button
+            class="adm-btn adm-btn-sec adm-btn-sm"
+            onclick="viewTransport(${i.id})"
+          >
+            👁
+          </button>
+
+        </td>
+
+        <td>
+
+          <select
+            class="adm-input"
+            onchange="updateTransportStatus(${i.id}, this.value)"
+          >
+
+            <option value="Đã nhận thú cưng"
+              ${i.status === 'Đã nhận thú cưng' ? 'selected' : ''}>
+              📥 Đã nhận
+            </option>
+
+            <option value="Đang di chuyển"
+              ${i.status === 'Đang di chuyển' ? 'selected' : ''}>
+              🚚 Đang di chuyển
+            </option>
+
+            <option value="Đã giao thành công"
+              ${i.status === 'Đã giao thành công' ? 'selected' : ''}>
+              ✅ Đã giao
+            </option>
+
+            <option value="Hủy chuyến"
+              ${i.status === 'Hủy chuyến' ? 'selected' : ''}>
+              ❌ Hủy chuyến
+            </option>
+
+          </select>
+
+        </td>
+
+      </tr>
+
+      `).join('')}
+
+      </tbody>
+
+    </table>
+
+  </div>
+  `;
+}
+
+async function viewTransport(id){
+
+  const items = await api('/api/transports');
+
+  const t = items.find(
+    x => x.id == id
+  );
+
+  document.getElementById(
+    'admModalTitle'
+  ).textContent =
+    'Chi tiết chuyến xe';
+
+  document.getElementById(
+    'admModalBody'
+  ).innerHTML = `
+
+    <p><b>Mã:</b> ${t.booking_code}</p>
+
+    <p><b>Khách hàng:</b> ${t.owner_name}</p>
+
+    <p><b>SĐT:</b> ${t.phone}</p>
+
+    <p><b>Thú cưng:</b> ${t.pet_name}</p>
+
+    <p><b>Điểm đón:</b> ${t.pickup_address}</p>
+
+    <p><b>Điểm trả:</b> ${t.dropoff_address}</p>
+
+    <p><b>Tài xế:</b> ${t.driver_name}</p>
+
+    <p><b>Biển số:</b> ${t.vehicle_plate}</p>
+
+    <p><b>Trạng thái:</b> ${t.status}</p>
+
+  `;
+
+  document
+    .getElementById(
+      'admModalOverlay'
+    )
+    .classList.add('open');
+}
+
+async function filterTransport() {
+
+    const date =
+        document.getElementById(
+            'transportDate'
+        ).value;
+
+    admTransports('', date);
+}
+
+async function updateTransportStatus(
+    id,
+    status
+){
+
+    await fetch(
+        `/admin/api/transports/${id}/status`,
+        {
+            method:'PUT',
+            headers:{
+                'Content-Type':
+                'application/json'
+            },
+            body:JSON.stringify({
+                status
+            })
+        }
+    );
+
+    admTransports();
+}
+
+function transportBadge(status){
+
+    if(status==='Đã nhận thú cưng')
+        return 'warning';
+
+    if(status==='Đang di chuyển')
+        return 'info';
+
+    if(status==='Đã giao thành công')
+        return 'success';
+
+    if(status==='Hủy chuyến')
+        return 'danger';
+
+    return 'secondary';
+}
+
+function transportBadge(status){
+    if(status === 'Đã nhận thú cưng') return 'warning';
+    if(status === 'Đang di chuyển') return 'info';
+    if(status === 'Đã giao thành công') return 'success';
+    if(status === 'Hủy chuyến') return 'danger';
+    return 'secondary';
+}
+
+function transportStatusText(status){
+
+  const map = {
+
+    pending : 'Chờ xác nhận',
+
+    received : 'Đã nhận thú cưng',
+
+    moving : 'Đang di chuyển',
+
+    delivered : 'Đã giao thành công',
+
+    cancelled : 'Hủy chuyến'
+
+  };
+
+  return map[status] || status;
+}
+
+function transportBadge(status){
+
+  if(
+    status === 'pending'
+  )
+    return 'warning';
+
+  if(
+    status === 'received'
+  )
+    return 'info';
+
+  if(
+    status === 'moving'
+  )
+    return 'primary';
+
+  if(
+    status === 'delivered'
+  )
+    return 'success';
+
+  if(
+    status === 'cancelled'
+  )
+    return 'danger';
+
+  return 'secondary';
+}
+
+function searchTransport() {
+
+  const keyword =
+    document.getElementById(
+      'transportSearch'
+    ).value;
+
+  admTransports(keyword);
 }

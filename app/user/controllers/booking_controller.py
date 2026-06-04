@@ -5,10 +5,7 @@ from app import db
 
 
 def submit_booking():
-    """
-    Xử lý đặt lịch hẹn từ form.
-    Validate dữ liệu, check ngày giờ không quá khứ, lưu vào DB.
-    """
+
     try:
         # Lấy dữ liệu từ request
         data = request.get_json(force=True)

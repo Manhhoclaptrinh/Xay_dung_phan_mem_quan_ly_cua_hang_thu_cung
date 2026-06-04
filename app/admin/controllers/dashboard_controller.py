@@ -20,6 +20,7 @@ from app.admin.models.import_receipt_detail_model import ImportReceiptDetail
 from app.admin.models.export_receipt_model import ExportReceipt
 from app.admin.models.export_receipt_detail_model import ExportReceiptDetail
 from app.admin.models.inventory_history_model import InventoryHistory
+from app.user.models.transport_model import TransportBooking
 from app import db
 
 admin_bp = Blueprint('admin', __name__)
@@ -1483,9 +1484,7 @@ def api_inventory_history():
         for h in history
     ])
 
-# ==========================
-# BOOKING REMINDERS API (THÊM MỚI)
-# ==========================
+# BOOKING REMINDERS API
 
 @admin_bp.route('/api/booking-reminders', methods=['GET'])
 def api_booking_reminders():
@@ -1501,7 +1500,7 @@ def api_booking_reminders():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ── Mark reminder as Sent (THÊM MỚI) ─────────────────────────
+# Mark reminder as Sent
 @admin_bp.route('/api/booking-reminders/<int:reminder_id>/mark-sent', methods=['POST'])
 def api_reminder_mark_sent(reminder_id):
     try:
@@ -1515,3 +1514,79 @@ def api_reminder_mark_sent(reminder_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+#BOOKING TRANSPORTS
+@admin_bp.route('/api/transports')
+def api_transports():
+
+    status = request.args.get('status', '')
+    search = request.args.get('search', '')
+    date = request.args.get('date', '')
+
+    query = TransportBooking.query
+
+    if status:
+        query = query.filter(
+            TransportBooking.status == status
+        )
+
+    if search:
+        query = query.filter(
+            (TransportBooking.booking_code.ilike(f'%{search}%')) |
+            (TransportBooking.owner_name.ilike(f'%{search}%')) |
+            (TransportBooking.pet_name.ilike(f'%{search}%')) |
+            (TransportBooking.phone.ilike(f'%{search}%'))
+        )
+
+    if date:
+        query = query.filter(
+            TransportBooking.transport_date == date
+        )
+
+    bookings = (
+        query.order_by(
+            TransportBooking.created_at.desc()
+        )
+        .all()
+    )
+    
+
+    return jsonify([
+        b.to_dict()
+        for b in bookings
+    ])
+
+@admin_bp.route(
+    '/api/transports/<int:id>/status',
+    methods=['PUT']
+)
+def api_update_transport_status(id):
+
+    booking = TransportBooking.query.get_or_404(id)
+
+    data = request.get_json(force=True)
+
+    status = data.get('status')
+
+    valid_status = [
+        'Chờ xác nhận',
+        'Đã nhận thú cưng',
+        'Đang di chuyển',
+        'Đã giao thành công',
+        'Hủy chuyến'
+    ]
+
+    if status not in valid_status:
+        return jsonify({
+            'ok': False,
+            'message': 'Trạng thái không hợp lệ'
+        }), 400
+
+    booking.status = status
+
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'message': 'Cập nhật thành công'
+    })
